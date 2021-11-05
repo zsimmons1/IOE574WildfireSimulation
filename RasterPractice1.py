@@ -3,7 +3,7 @@ from rasterio.plot import show
 from matplotlib import pyplot as plt
 import numpy as np
 
-img = rasterio.open('C:/Users/sprin/OneDrive/Desktop/IOE574/TermProject/Data/us_210evc.tif')
+img = rasterio.open('/Users/Zack/Desktop/IOE574/TermProject/IOE574WildfireSimulation/us_210evc.tif')
 show(img)
 
 full_img = img.read()

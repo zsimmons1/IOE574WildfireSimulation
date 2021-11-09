@@ -14,6 +14,8 @@ from astropy.visualization import make_lupton_rgb
 shape = [11.4, 13.6, 13.0]
 
 def ignite(fire, i, j):
+    # TODO: Revise to return which neighbors are 100% on fire
+    # Then, adjust m^2/hr spread based on how many neighbors (of each type, orthogonal and diagonal) are on fire
     for a in range (-1, 2):
         # ensures index doesn't go out of bounds 
         if i+a > np.size(fire,0) - 1:
@@ -29,12 +31,55 @@ def ignite(fire, i, j):
 def calcNewBurn(fire, veg, i, j, del_t):
     # if it is already burning, update burn rate and % burn, or check to ignite new fire
     if fire[i][j] > 0 or ignite(fire, i, j) == True:
-        burnRate = math.pow(10, np.random.weibull(shape[veg[i][j]-1]))
+        burnRate = math.pow(10, np.random.weibull(shape[veg[i][j]-1])) # m/hr
         burn = fire[i][j] + burnRate*del_t / 30
         if burn > 1:
             burn = 1
         return burn
     return 0
+
+def advanceBurn(fire, veg, x, i, j, del_t):
+    p_a = fire[i-1][j-1]
+    if p_a > np.random.uniform:
+        x_a = x_a + (math.pow(10, np.random.weibull(shape[veg[i][j]-1])))*del_t
+    else:
+        x_a = x_a 
+
+    p_b = fire[i-1][j]
+    if p_b > np.random.uniform:
+        u_b = math.pow(10, np.random.weibull(shape[veg[i][j]-1]))
+    else:
+        u_b = 0    
+    p_c = fire[i-1][j+1] 
+    if p_c > np.random.uniform:
+        u_c = math.pow(10, np.random.weibull(shape[veg[i][j]-1]))
+    else:
+        u_c = 0   
+    p_d = fire[i][j-1]
+    if p_d > np.random.uniform:
+        u_d = math.pow(10, np.random.weibull(shape[veg[i][j]-1]))
+    else:
+        u_d = 0  
+    p_e = fire[i][j+1] 
+    if p_e > np.random.uniform:
+        u_e = math.pow(10, np.random.weibull(shape[veg[i][j]-1]))
+    else:
+        u_e = 0 
+    p_f = fire[i+1][j-1]
+    if p_f > np.random.uniform:
+        u_f = math.pow(10, np.random.weibull(shape[veg[i][j]-1]))
+    else:
+        u_f = 0 
+    p_g = fire[i+1][j]
+    if p_g > np.random.uniform:
+        u_g = math.pow(10, np.random.weibull(shape[veg[i][j]-1]))
+    else:
+        u_g = 0 
+    p_h = fire[i+1][j+1] 
+    if p_h > np.random.uniform:
+        u_h = math.pow(10, np.random.weibull(shape[veg[i][j]-1]))
+    else:
+        u_h = 0  
 
 
 img = rasterio.open('/Users/Zack/Desktop/IOE574/TermProject/IOE574WildfireSimulation/us_210evc.tif')

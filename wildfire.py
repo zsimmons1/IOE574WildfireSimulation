@@ -28,7 +28,7 @@ def ignite(fire, i, j):
                  return True
     return False
 
-def calcNewBurn(fire, veg, i, j, del_t):
+def updateBurn(fire, veg, i, j, del_t):
     # if it is already burning, update burn rate and % burn, or check to ignite new fire
     if fire[i][j] > 0 or ignite(fire, i, j) == True:
         burnRate = math.pow(10, np.random.weibull(shape[veg[i][j]-1])) # m/hr
@@ -36,56 +36,80 @@ def calcNewBurn(fire, veg, i, j, del_t):
         if burn > 1:
             burn = 1
         return burn
-    return 0    
+    return 0
 
-def advanceBurn(fire, veg, spread, i, j, del_t):
-    p_a = fire[i-1][j-1]
+def advanceBurn(fire, veg, prev_distance, i, j, del_t):
+    distance = []
+    counter = 0
+    indices = [0, 1, 2, 3, 4, 5, 6, 7, 8]
+
+    for x in range (-1,2):
+        for y in range (-1,2):
+            if x != 0 and y != 0:
+                current_percent = fire[i+x][j+y]
+                if prev_distance[indices[counter]] != 0:
+                    distance.append(prev_distance[indices[counter]] + (math.pow(10, np.random.weibull(shape[veg[i][j]-1])))*del_t)
+                else:
+                    if current_percent > np.random.uniform:
+                        distance.append(prev_distance[indices[counter]] + (math.pow(10, np.random.weibull(shape[veg[i][j]-1])))*del_t)
+                    else:
+                        distance.append(prev_distance[indices[counter]])
+            counter += 1
+
+    return distance
+
+def spreadProbability(wind_speed, wind_dir, fire):
+    probability_spread = []
+
+    
+
+    return probability_spread
+
+    
+    # p_a = fire[i-1][j-1]
+    # if p_a > np.random.uniform:
+    #     x_a = x_a + (math.pow(10, np.random.weibull(shape[veg[i][j]-1])))*del_t
+    # else:
+    #     x_a = x_a 
+
+    # p_b = fire[i-1][j]
+    # if p_b > np.random.uniform:
+    #     u_b = math.pow(10, np.random.weibull(shape[veg[i][j]-1]))
+    # else:
+    #     u_b = 0    
+    # p_c = fire[i-1][j+1] 
+    # if p_c > np.random.uniform:
+    #     u_c = math.pow(10, np.random.weibull(shape[veg[i][j]-1]))
+    # else:
+    #     u_c = 0   
+    # p_d = fire[i][j-1]
+    # if p_d > np.random.uniform:
+    #     u_d = math.pow(10, np.random.weibull(shape[veg[i][j]-1]))
+    # else:
+    #     u_d = 0  
+    # p_e = fire[i][j+1] 
+    # if p_e > np.random.uniform:
+    #     u_e = math.pow(10, np.random.weibull(shape[veg[i][j]-1]))
+    # else:
+    #     u_e = 0 
+    # p_f = fire[i+1][j-1]
+    # if p_f > np.random.uniform:
+    #     u_f = math.pow(10, np.random.weibull(shape[veg[i][j]-1]))
+    # else:
+    #     u_f = 0 
+    # p_g = fire[i+1][j]
+    # if p_g > np.random.uniform:
+    #     u_g = math.pow(10, np.random.weibull(shape[veg[i][j]-1]))
+    # else:
+    #     u_g = 0 
+    # p_h = fire[i+1][j+1] 
+    # if p_h > np.random.uniform:
+    #     u_h = math.pow(10, np.random.weibull(shape[veg[i][j]-1]))
+    # else:
+    #     u_h = 0  
 
 
-
-    if p_a > np.random.uniform:
-        s_a = spread[i][j][0] + (math.pow(10, np.random.weibull(shape[veg[i][j]-1])))*del_t
-    else:
-        s_a = spread[i][j][0]
-
-    p_b = fire[i-1][j]
-    if p_b > np.random.uniform:
-        u_b = math.pow(10, np.random.weibull(shape[veg[i][j]-1]))
-    else:
-        u_b = 0    
-    p_c = fire[i-1][j+1] 
-    if p_c > np.random.uniform:
-        u_c = math.pow(10, np.random.weibull(shape[veg[i][j]-1]))
-    else:
-        u_c = 0   
-    p_d = fire[i][j-1]
-    if p_d > np.random.uniform:
-        u_d = math.pow(10, np.random.weibull(shape[veg[i][j]-1]))
-    else:
-        u_d = 0  
-    p_e = fire[i][j+1] 
-    if p_e > np.random.uniform:
-        u_e = math.pow(10, np.random.weibull(shape[veg[i][j]-1]))
-    else:
-        u_e = 0 
-    p_f = fire[i+1][j-1]
-    if p_f > np.random.uniform:
-        u_f = math.pow(10, np.random.weibull(shape[veg[i][j]-1]))
-    else:
-        u_f = 0 
-    p_g = fire[i+1][j]
-    if p_g > np.random.uniform:
-        u_g = math.pow(10, np.random.weibull(shape[veg[i][j]-1]))
-    else:
-        u_g = 0 
-    p_h = fire[i+1][j+1] 
-    if p_h > np.random.uniform:
-        u_h = math.pow(10, np.random.weibull(shape[veg[i][j]-1]))
-    else:
-        u_h = 0  
-
-
-img = rasterio.open('/Users/sprin/OneDrive/Desktop/IOE574/TermProject/Data/Other/us_210evc.tif')
+img = rasterio.open('/Users/Zack/Desktop/IOE574/TermProject/IOE574WildfireSimulation/us_210evc.tif')
 map = img.read()
 
 veg = np.floor_divide(map[0], np.ones([np.size(map, 1), np.size(map, 2)], dtype=int)*100)
@@ -117,7 +141,7 @@ while t < 25:
                 if j < np.size(fire, 1):
                     # if the cell is unburnable, skip it
                     if veg[i][j]!=0:
-                        tempFire[i][j] = calcNewBurn(fire, veg, i, j, del_t)
+                        tempFire[i][j] = updateBurn(fire, veg, i, j, del_t)
                         # update outer fire border
                         if tempFire[i][j] >= 0:
                             if i < fireBorder[0]:
@@ -161,4 +185,3 @@ ax2.legend(handles = ax2legendElements, bbox_to_anchor=(1.5, 1.0), loc='upper ri
 plt.show()
 
 show(fire, cmap='Reds')
-

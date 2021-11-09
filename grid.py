@@ -10,8 +10,9 @@ import earthpy as et
 import numpy as np
 import rasterio
 from rasterio.plot import show
+import math
 
-img = rasterio.open('/Users/Zack/Desktop/IOE574/TermProject/IOE574WildfireSimulation/us_210evc.tif')
+img = rasterio.open('/Users/sprin/OneDrive/Desktop/IOE574/TermProject/Data/NorthernCali/us_210evc_us_210evc.tif')
 show(img)
 
 map = img.read()
@@ -59,59 +60,128 @@ def willHerbAreaBurn(vegetation_value, fire_counter):
             return 100  
     return 0
 
-def setLocation(i, j):
-    if i < fire_locations[0]:
-        min_i = i
-    if i > fire_locations[1]:
-        print("step in x")
-        max_i = i
-    if j < fire_locations[2]:
-        min_j = j
-    if j > fire_locations[3]:
-        print("step in y")
-        max_j = j
-    fire_loc = [min_i, max_i, min_j, max_j]
+def calcWindEffects(w_s, w_d, i_pos, j_pos): # where w_s is wind speed, w_d is wind direction, and i_pos and j_pos are -1, 0, or 1
+    C1 = 0.045 # (m^-1 * s)
+    C2 = 0.131 # (m^-1 * s)
     
-    return fire_loc
+    if i_pos == -1:
+        if j_pos == -1:
+            s_d = 315
+        elif j_pos == 0:
+            s_d = 270
+        elif j_pos == 1:
+            s_d = 225
+        else:
+            print("invalid j position")            
+    elif i_pos == 0:
+        if j_pos == -1:
+            s_d = 0
+        elif j_pos == 1: 
+            s_d = 180
+        else:
+            print("invalid j position")           
+    elif i_pos == 1:
+        if j_pos == -1:
+            s_d = 45
+        elif j_pos == 0:
+            s_d = 90
+        elif j_pos == 1:
+            s_d = 135
+        else:
+            print("invalid j position")             
+    else:
+        print("invalid i position")
+
+    theta = math.pi*abs(w_d - s_d)/180 
+    f_t = math.exp(w_s*C2*(math.cos(theta) - 1))
+    Pw = f_t*exp(C1*w_s)
+    
+    return Pw
+
+def calcBurn(map, fire, i, j, w_s, w_d):
+    P_burn = 0
+    if map[0][i][j] >= 100 & map[0][i][j] <= 199:
+        P_veg = 0.8 # TODO: Adjust this value based on literature!
+        P_den = 0.7*(veg - 100)/100 + -0.4 # Based on -0.4 to 0.3 range in Mutthulakshimi et al.
+    elif map[0][i][j] >= 200 & map[0][i][j] <= 299:  
+        P_veg = 0.5 # TODO: Adjust this value based on literature!
+        P_den = 0.7*(veg - 200)/100 + -0.4
+    elif map[0][i][j] >= 300 & map[0][i][j] <= 399:
+        P_veg = 0.2 # TODO: Adjust this value based on literature!
+        P_den = 0.7*(veg - 300)/100 + -0.4
+    else:
+        print("Invalid vegetation value")  
+
+    C1 = 0.045 # (m^-1 * s)
+    C2 = 0.131 # (m^-1 * s)
+
+    P_w = fire[i-1][j-1]*math.exp(w_s*C2*(math.cos(math.pi*abs(w_d - 315)/180) - 1))*exp(C1*w_s)
+    P_burn = 1/sqrt(2)*P_h*(1+P_den)*(1+P_veg)*P_w
+    if np.random.uniform >= P_burn:
+        return 1
+    else:    
+        P_w = fire[i-1][j]*math.exp(w_s*C2*(math.cos(math.pi*abs(w_d - 270)/180) - 1))*exp(C1*w_s)
+        P_burn = P_h*(1+P_den)*(1+P_veg)*P_w
+        if np.random.uniform >= P_burn:
+            return 1
+        else:
+            P_w = fire[i-1][j+1]*math.exp(w_s*C2*(math.cos(math.pi*abs(w_d - 225)/180) - 1))*exp(C1*w_s)
+            P_burn = 1/sqrt(2)*(1+P_den)*(1+P_veg)*P_w
+            if np.random.uniform >= P_burn:
+                return 1
+            else:    
+                P_w = fire[i][j+1]*math.exp(w_s*C2*(math.cos(math.pi*abs(w_d - 0)/180) - 1))*exp(C1*w_s)
+                P_burn = P_h*(1+P_den)*(1+P_veg)*P_w
+                if np.random.uniform >= P_burn:
+                    return 1
+                else:    
+                    P_w = fire[i][j-1]*math.exp(w_s*C2*(math.cos(math.pi*abs(w_d - 180)/180) - 1))*exp(C1*w_s)
+                    P_burn = P_h*(1+P_den)*(1+P_veg)*P_w
+                    if np.random.uniform >= P_burn:
+                        return 1
+                    else:       
+                        P_w = fire[i+1][j-1]*math.exp(w_s*C2*(math.cos(math.pi*abs(w_d - 45)/180) - 1))*exp(C1*w_s)
+                        P_burn = 1/sqrt(2)*P_h*(1+P_den)*(1+P_veg)*P_w
+                        if np.random.uniform >= P_burn:
+                            return 1
+                        else:    
+                            P_w = fire[i+1][j]*math.exp(w_s*C2*(math.cos(math.pi*abs(w_d - 90)/180) - 1))*exp(C1*w_s)
+                            P_burn = P_h*(1+P_den)*(1+P_veg)*P_w
+                            if np.random.uniform >= P_burn:
+                                return 1
+                            else:    
+                                P_w = fire[i+1][j+1]*math.exp(w_s*C2*(math.cos(math.pi*abs(w_d - 135)/180) - 1))*exp(C1*w_s)
+                                P_burn = 1/sqrt(2)*P_h*(1+P_den)*(1+P_veg)*P_w
+                                if np.random.uniform >= P_burn:
+                                    return 1
+                                else:
+                                    return 0
+
 
 
 # Trying a simple case with 5 time steps and starting the fire at the center of our grid
 while t != 5:
     temp_fire = fire
     for i in range(fire_locations[0] - 1, fire_locations[1] + 2):
-        print("i: ", i)
         for j in range(fire_locations[2] - 1, fire_locations[3] + 2):
-            print("j: ", j)
             if map[0][i][j] > 99:
-                orth_neighbor = fire[0][i+1][j] + fire[0][i-1][j] + fire[0][i][j+1] + fire[0][i][j-1]
-                diag_neighbord = fire[0][i+1][j+1] + fire[0][i+1][j-1] + fire[0][i-1][j+1] + fire[0][i-1][j-1]
-                fire_counter = orth_neighbor + diag_neighbord
-                if map[0][i][j] > 99 and map[0][i][j] < 200:
-                    temp_fire[0][i][j] = willTreeAreaBurn(map[0][i][j], fire_counter)
-                    fire_locations = setLocation(i,j)
-                elif map[0][i][j] > 199 and map[0][i][j] < 300:
-                    temp_fire[0][i][j] = willShrubAreaBurn(map[0][i][j], fire_counter)
-                    fire_locations = setLocation(i,j)
-                elif map[0][i][j] > 299:
-                    temp_fire[0][i][j] = willHerbAreaBurn(map[0][i][j], fire_counter) 
-                    fire_locations = setLocation(i,j)               
-                
-                # if fire[0][i+1][j] == 100 or fire[0][i-1][j] == 100 or fire[0][i][j+1] == 100 or fire[0][i][j-1] == 100 or fire[0][i+1][j+1] == 100 or fire[0][i+1][j-1] == 100 or fire[0][i-1][j+1] == 100 or fire[0][i-1][j-1] == 100:
+                w_s = 8 # TODO: Make stochastic
+                w_d = 0 # TODO: Make stochastic
+                P_burn = calcBurnProb(map, fire, i, j, w_s, w_d)               
+                temp_fire[i][j] = P_burn
                     
                 #     temp_fire[0][i][j] = 100
-    #             if i < fire_locations[0]:
-    #                 min_i = i
-    #             if i > fire_locations[1]:
-    #                 print("step in x")
-    #                 max_i = i
-    #             if j < fire_locations[2]:
-    #                 min_j = j
-    #             if j > fire_locations[3]:
-    #                 print("step in y")
-    #                 max_j = j
+                if i < fire_locations[0]:
+                    min_i = i
+                if i > fire_locations[1]:
+                    max_i = i
+                if j < fire_locations[2]:
+                    min_j = j
+                if j > fire_locations[3]:
+                    max_j = j
     
     # fire_locations = [min_i, max_i, min_j, max_j]
     fire = temp_fire
     t += 1
 
-show(fire)
+show(fire, cmap='Reds')

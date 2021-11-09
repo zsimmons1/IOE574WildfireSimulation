@@ -38,19 +38,28 @@ def updateBurn(fire, veg, i, j, del_t):
         return burn
     return 0
 
-def advanceBurn(fire, veg, prev_distance, i, j, del_t):
+
+def advanceBurn(fire, veg, prev_distance, i, j, del_t, wind_speed, wind_direction):
     distance = []
     counter = 0
     indices = [0, 1, 2, 3, 4, 5, 6, 7, 8]
+    spread_angles = [45, 0, 315, 90, -1, 270, 135, 180, 225]
 
     for x in range (-1,2):
         for y in range (-1,2):
             if x != 0 and y != 0:
-                current_percent = fire[i+x][j+y]
+                # Calculate the angle between the (potential) fire spread direction and the wind direction
+                angle = spread_angles[counter] - wind_direction
+                if angle > 180:
+                    angle -= 360
+                elif angle < -180:
+                    angle += 360
+
+                spread_prob = fire[i+x][j+y] + cos(angle)
                 if prev_distance[indices[counter]] != 0:
                     distance.append(prev_distance[indices[counter]] + (math.pow(10, np.random.weibull(shape[veg[i][j]-1])))*del_t)
                 else:
-                    if current_percent > np.random.uniform:
+                    if spread_prob > np.random.uniform:
                         distance.append(prev_distance[indices[counter]] + (math.pow(10, np.random.weibull(shape[veg[i][j]-1])))*del_t)
                     else:
                         distance.append(prev_distance[indices[counter]])

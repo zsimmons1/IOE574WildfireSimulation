@@ -18,6 +18,8 @@ show(img)
 map = img.read()
 fire = np.zeros(map.shape, dtype=rasterio.float32)  # Create empty matrix
 
+
+# fire[0][x][x] = [0, 1, 2, 3] [not burning, partially burned, fully burning, burnt]
 fire[0][28][24] = 100
 fire_locations = [28, 28, 24, 24] # [x_lower_bound, x_upper_bound, y_lower_bound, y_upper_bound]
 
@@ -36,6 +38,8 @@ max_j = 24
 
 def willTreeAreaBurn(vegetation_value, fire_counter):
     # Case 1
+    percentage = (vegetation_value - 100) / 100
+    fire_counter = fire_counter * percentage
     if vegetation_value > 99 and vegetation_value < 200:
         if fire_counter >= 100:
             return 100
@@ -43,15 +47,17 @@ def willTreeAreaBurn(vegetation_value, fire_counter):
 
 def willShrubAreaBurn(vegetation_value, fire_counter):
     # Case 1
+    percentage = vegetation_value - 200
     if vegetation_value > 199 and vegetation_value < 300: 
         if fire_counter >= 600:
             return 100   
     return 0
 
 def willHerbAreaBurn(vegetation_value, fire_counter):
+    percentage = vegetation_value - 300
     if vegetation_value > 299: 
         if fire_counter >= 700:
-            return 100   
+            return 100  
     return 0
 
 def calcWindEffects(w_s, w_d, i_pos, j_pos): # where w_s is wind speed, w_d is wind direction, and i_pos and j_pos are -1, 0, or 1
@@ -174,7 +180,7 @@ while t != 5:
                 if j > fire_locations[3]:
                     max_j = j
     
-    fire_locations = [min_i, max_i, min_j, max_j]
+    # fire_locations = [min_i, max_i, min_j, max_j]
     fire = temp_fire
     t += 1
 

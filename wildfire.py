@@ -38,12 +38,15 @@ def calcNewBurn(fire, veg, i, j, del_t):
         return burn
     return 0    
 
-def advanceBurn(fire, veg, x, i, j, del_t):
+def advanceBurn(fire, veg, spread, i, j, del_t):
     p_a = fire[i-1][j-1]
+
+
+
     if p_a > np.random.uniform:
-        x_a = x_a + (math.pow(10, np.random.weibull(shape[veg[i][j]-1])))*del_t
+        s_a = spread[i][j][0] + (math.pow(10, np.random.weibull(shape[veg[i][j]-1])))*del_t
     else:
-        x_a = x_a 
+        s_a = spread[i][j][0]
 
     p_b = fire[i-1][j]
     if p_b > np.random.uniform:

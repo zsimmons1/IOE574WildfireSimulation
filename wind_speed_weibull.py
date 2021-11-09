@@ -1,9 +1,14 @@
 import pandas
 import matplotlib.pyplot as plt
 import numpy
+import numpy as np
 
 data = pandas.read_csv("weather.csv")
-wind_speed = data["HourlyWindSpeed"]
+messy_wind_speed = data["HourlyWindSpeed"]
+
+#remove nan values
+wind_speed = [x for x in messy_wind_speed if np.isnan(x) == False]
+
 
 #plot of actual data#
 N = len(wind_speed)
@@ -15,7 +20,7 @@ plt.xlabel("Wind speed in m/s")
 from scipy.stats import weibull_min
 plt.hist(wind_speed, density=True, alpha=0.5)
 shape, loc, scale = weibull_min.fit(wind_speed, floc = 1)
-x = numpy.linspace(wind_speed.min(), wind_speed.max(), 100)
+x = numpy.linspace(min(wind_speed), max(wind_speed), 100)
 plt.plot(x, weibull_min(shape, loc, scale).pdf(x))
 plt.title("Weibull fit on win speed data")
 plt.xlabel("Wind Speed in m/s")

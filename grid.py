@@ -17,6 +17,8 @@ show(img)
 map = img.read()
 fire = np.zeros(map.shape, dtype=rasterio.float32)  # Create empty matrix
 
+
+# fire[0][x][x] = [0, 1, 2, 3] [not burning, partially burned, fully burning, burnt]
 fire[0][28][24] = 100
 fire_locations = [28, 28, 24, 24] # [x_lower_bound, x_upper_bound, y_lower_bound, y_upper_bound]
 
@@ -35,6 +37,8 @@ max_j = 24
 
 def willTreeAreaBurn(vegetation_value, fire_counter):
     # Case 1
+    percentage = (vegetation_value - 100) / 100
+    fire_counter = fire_counter * percentage
     if vegetation_value > 99 and vegetation_value < 200:
         if fire_counter >= 100:
             return 100
@@ -42,16 +46,33 @@ def willTreeAreaBurn(vegetation_value, fire_counter):
 
 def willShrubAreaBurn(vegetation_value, fire_counter):
     # Case 1
+    percentage = vegetation_value - 200
     if vegetation_value > 199 and vegetation_value < 300: 
         if fire_counter >= 600:
             return 100   
     return 0
 
 def willHerbAreaBurn(vegetation_value, fire_counter):
+    percentage = vegetation_value - 300
     if vegetation_value > 299: 
         if fire_counter >= 700:
-            return 100   
+            return 100  
     return 0
+
+def setLocation(i, j):
+    if i < fire_locations[0]:
+        min_i = i
+    if i > fire_locations[1]:
+        print("step in x")
+        max_i = i
+    if j < fire_locations[2]:
+        min_j = j
+    if j > fire_locations[3]:
+        print("step in y")
+        max_j = j
+    fire_loc = [min_i, max_i, min_j, max_j]
+    
+    return fire_loc
 
 
 # Trying a simple case with 5 time steps and starting the fire at the center of our grid
@@ -62,29 +83,34 @@ while t != 5:
         for j in range(fire_locations[2] - 1, fire_locations[3] + 2):
             print("j: ", j)
             if map[0][i][j] > 99:
-                fire_counter = fire[0][i+1][j] + fire[0][i-1][j] + fire[0][i][j+1] + fire[0][i][j-1] + fire[0][i+1][j+1] + fire[0][i+1][j-1] + fire[0][i-1][j+1] + fire[0][i-1][j-1]
+                orth_neighbor = fire[0][i+1][j] + fire[0][i-1][j] + fire[0][i][j+1] + fire[0][i][j-1]
+                diag_neighbord = fire[0][i+1][j+1] + fire[0][i+1][j-1] + fire[0][i-1][j+1] + fire[0][i-1][j-1]
+                fire_counter = orth_neighbor + diag_neighbord
                 if map[0][i][j] > 99 and map[0][i][j] < 200:
                     temp_fire[0][i][j] = willTreeAreaBurn(map[0][i][j], fire_counter)
+                    fire_locations = setLocation(i,j)
                 elif map[0][i][j] > 199 and map[0][i][j] < 300:
                     temp_fire[0][i][j] = willShrubAreaBurn(map[0][i][j], fire_counter)
+                    fire_locations = setLocation(i,j)
                 elif map[0][i][j] > 299:
-                    temp_fire[0][i][j] = willHerbAreaBurn(map[0][i][j], fire_counter)                
+                    temp_fire[0][i][j] = willHerbAreaBurn(map[0][i][j], fire_counter) 
+                    fire_locations = setLocation(i,j)               
                 
                 # if fire[0][i+1][j] == 100 or fire[0][i-1][j] == 100 or fire[0][i][j+1] == 100 or fire[0][i][j-1] == 100 or fire[0][i+1][j+1] == 100 or fire[0][i+1][j-1] == 100 or fire[0][i-1][j+1] == 100 or fire[0][i-1][j-1] == 100:
                     
                 #     temp_fire[0][i][j] = 100
-                if i < fire_locations[0]:
-                    min_i = i
-                if i > fire_locations[1]:
-                    print("step in x")
-                    max_i = i
-                if j < fire_locations[2]:
-                    min_j = j
-                if j > fire_locations[3]:
-                    print("step in y")
-                    max_j = j
+    #             if i < fire_locations[0]:
+    #                 min_i = i
+    #             if i > fire_locations[1]:
+    #                 print("step in x")
+    #                 max_i = i
+    #             if j < fire_locations[2]:
+    #                 min_j = j
+    #             if j > fire_locations[3]:
+    #                 print("step in y")
+    #                 max_j = j
     
-    fire_locations = [min_i, max_i, min_j, max_j]
+    # fire_locations = [min_i, max_i, min_j, max_j]
     fire = temp_fire
     t += 1
 

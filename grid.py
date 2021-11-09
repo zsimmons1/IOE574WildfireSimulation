@@ -88,7 +88,7 @@ def calcWindEffects(w_s, w_d, i_pos, j_pos): # where w_s is wind speed, w_d is w
         elif j_pos == 1:
             s_d = 135
         else:
-            print("invalid j position")             
+            print("invalid j position")    
     else:
         print("invalid i position")
 

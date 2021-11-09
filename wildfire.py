@@ -34,10 +34,10 @@ def calcNewBurn(fire, veg, i, j, del_t):
         if burn > 1:
             burn = 1
         return burn
-    return 0    
+    return 0
 
 
-img = rasterio.open('/Users/sprin/OneDrive/Desktop/IOE574/TermProject/Data/Other/us_210evc.tif')
+img = rasterio.open('/Users/Zack/Desktop/IOE574/TermProject/IOE574WildfireSimulation/us_210evc.tif')
 map = img.read()
 
 veg = np.floor_divide(map[0], np.ones([np.size(map, 1), np.size(map, 2)], dtype=int)*100)

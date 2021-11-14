@@ -3,10 +3,46 @@ import numpy as np
 import math
 
 # igniteCell: 
-def igniteCell(fire, i, j, wind_speed, wind_direction):
-    ignite = [0, 0, 0, 0, 0, 0, 0, 0]
-    spread_prob = [0, 0, 0, 0, 0, 0, 0, 0]
-    return ignite, spread_prob
+def igniteCell(fire, distance, i, j, wind_speed, wind_direction):
+    cell_transition = [0, 0, 0, 0, 0, 0, 0, 0]
+    spread_angles = [45, 0, 315, 90, 270, 135, 180, 225]
+
+    # Set baseline spread probability for each neighbor as the percent on fire of that neighbor
+    spread_prob = [fire[i-1][j+1], fire[i-1][j], fire[i-1][j-1],
+                   fire[i][j+1], fire[i][j-1],
+                   fire[i+1][j+1], fire[i+1][j], fire[i+1][j-1]]        
+
+    # Determine which neighbor cells contribute to the fire in cell i,j
+    for k in range(len(distance)):
+        # If there is a spread distance from neighbor k, then neighbor k ignited cell i,j in a previous time step
+        if distance[k] > 0:
+            cell_transition[k] = 1
+        # Else, determine if neighbor k will ignite cell i,j in this time step    
+        else: 
+            # Adjust 'spread_prob' based on wind speed and direction
+            angle = spread_angles[k] - wind_direction
+            if angle > 180:
+                angle -= 360
+            elif angle < -180:
+                angle += 360
+
+            # TODO: Create function(s) to determine alpha_w
+            # set function based on wind speed
+            # input angle into funciton to get alpha_w facor
+            alpha_w = 0.5
+            spread_prob[k] = spread_prob[k]*alpha_w
+            
+            # Ensure all probabilities are no more than 1
+            if spread_prob[k] > 1:
+                spread_prob[k] = 1
+
+            # Draw from uniform distribution to determine if neighbor k will spread to cell i,j     
+            if np.random.uniform < spread_prob[k]:
+                cell_transition[k] = 1          
+            # Else, neighbor k does not contribute to the fire in cell i,j, so 'cell_transition[k]' remains 0
+
+    # Return the cell_transition and spread_prob
+    return cell_transition, spread_prob
 
 
 # advanceBurn: 
@@ -20,7 +56,7 @@ def advanceBurn(fire, veg, distance, i, j, del_t):
 # intensity of spread in each direction. Area of spread is then used to calculate total proportion of 
 # the cell which is on fire.
     # 'distance' is an 8-element vector of the distance of spread in each direction, from neighbors in the
-        # follosdjkj  wing order: SW, W, NW, S, N, SE, E, NE
+        # following order: SW, W, NW, S, N, SE, E, NE
     # 'spread_prob' is an 8-element vector of the spread probability from each neighbor to cell i,j with 
         # neighbor order same as distance vector
 def spreadFire(distance, spread_prob):
@@ -130,10 +166,8 @@ def spreadFire(distance, spread_prob):
     # Equation 8: Subtract overlap from non-adjacent diagonal and orthogonal  neighbors (0-4, 0-6, 2-3, 2-5, 5-1, 5-4, 7-1, 7-3)     
     for i, j in [0,4], [0,6], [2,3], [2,5], [5,1], [5,4], [7,1], [7,3]:
         if ((pow(2, 0.5)*distance[i] + distance[j] > 30) & (distance[i]!=0) & (distance[j]!=0)):
-            print("here")
             # Equation 8.1: Subtract overlap from non-adjacent orthogonal and diagonal neighbors when the diagonal distance ≤ half 
             if((distance[i] <= 15*pow(2, 0.5)) & (pow(2, 0.5)*distance[i] + distance[j] > 30)):
-                print("8.1")
                 burnArea -= ((spread_prob[i] + spread_prob[j])/2)*(pow((30 - (pow(2, 0.5)*distance[i] + distance[j])), 2)/2)
             # Equation 8.2: Subtract overlap from non-adjacent orthogonal and diagonal neighbors when the diagonal distance ≥ half and does not fill the entire area
             elif((distance[i] > 15*pow(2, 0.5)) & (pow(2, 0.5)*(30*pow(2, 0.5)-distance[i])+distance[j] < 30)):

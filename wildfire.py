@@ -2,6 +2,7 @@
 
 # DESCRIPTION:
 
+# Include libraries
 import os 
 import matplotlib.pyplot as plt
 import matplotlib.lines as lines
@@ -11,6 +12,7 @@ from rasterio.plot import show
 import math
 from astropy.visualization import make_lupton_rgb
 
+# shape stores the Weibull distribution shape for each vegetation type
 shape = [11.4, 13.6, 13.0]
 
 def ignite(fire, i, j):
@@ -40,6 +42,8 @@ def updateBurn(fire, veg, i, j, del_t):
 
 
 def advanceBurn(fire, veg, prev_distance, i, j, del_t, wind_speed, wind_direction):
+    # Distance is a vector with the distance of fire advancement from each direction depending on the spread
+    # from neighbors. Order is 
     distance = []
     counter = 0
     indices = [0, 1, 2, 3, 4, 5, 6, 7, 8]
@@ -47,6 +51,7 @@ def advanceBurn(fire, veg, prev_distance, i, j, del_t, wind_speed, wind_directio
 
     for x in range (-1,2):
         for y in range (-1,2):
+            # Considers all cells in the Moore's neighborhood of the central cell (excluding the central cell)
             if x != 0 and y != 0:
                 # Calculate the angle between the (potential) fire spread direction and the wind direction
                 angle = spread_angles[counter] - wind_direction
@@ -55,14 +60,23 @@ def advanceBurn(fire, veg, prev_distance, i, j, del_t, wind_speed, wind_directio
                 elif angle < -180:
                     angle += 360
 
-                spread_prob = fire[i+x][j+y] + cos(angle)
+                # Calculate spread probability from percentage of cell on fire and wind
+                # TODO: Make this equation more sophisticated
+                spread_prob = fire[i+x][j+y] + wind_speed*cos(angle)
+                if spread_prob > 1:
+                    spread_prob = 1
+                elif spread_prob < 0:
+                    spread_prob = 0
+
+                # If the middle cell is already on fire, then advance the fire
                 if prev_distance[indices[counter]] != 0:
                     distance.append(prev_distance[indices[counter]] + (math.pow(10, np.random.weibull(shape[veg[i][j]-1])))*del_t)
+                # Else, check if the middle cell will ignite in this time step
+                elif spread_prob > np.random.uniform:
+                    distance.append(prev_distance[indices[counter]] + (math.pow(10, np.random.weibull(shape[veg[i][j]-1])))*del_t)
+                # Else, the middle cell remains completely unburned
                 else:
-                    if spread_prob > np.random.uniform:
-                        distance.append(prev_distance[indices[counter]] + (math.pow(10, np.random.weibull(shape[veg[i][j]-1])))*del_t)
-                    else:
-                        distance.append(prev_distance[indices[counter]])
+                    distance.append(prev_distance[indices[counter]])
             counter += 1
 
     return distance
@@ -118,12 +132,13 @@ def spreadProbability(wind_speed, wind_dir, fire):
     #     u_h = 0  
 
 
-img = rasterio.open('/Users/Zack/Desktop/IOE574/TermProject/IOE574WildfireSimulation/us_210evc.tif')
+img = rasterio.open('/Users/sprin/OneDrive/Desktop/IOE574/TermProject/IOE574WildfireSimulation/us_210evc.tif')
 map = img.read()
 
 veg = np.floor_divide(map[0], np.ones([np.size(map, 1), np.size(map, 2)], dtype=int)*100)
 den = np.mod(map[0], np.ones((np.size(map, 1), np.size(map, 2)), dtype=int)*100)
 fire = np.zeros((np.size(map, 1), np.size(map, 2)), dtype=float)
+distance = np.zeros((np.size(map, 1), np.size(map, 2), 8), dtype=float)
 burnRate = fire
 
 starti = 28

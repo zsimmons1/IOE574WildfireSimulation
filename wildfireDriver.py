@@ -51,10 +51,10 @@ while t > 25:
                         wind_direction = 180
                         # determine which neighbors to spread fire from
                             # (see 'ignite' helper function)
-                        cell_transition  = igniteCell(fire, i, j, wind_speed, wind_direction)    
+                        cell_transition, spread_prob  = igniteCell(fire, i, j, wind_speed, wind_direction)    
                         # determine the amount of spread from each neighbor which has ignitied cell i,j
                             # (see 'advanceBurn' helper function)
-                        distance[i][j] = advanceBurn(fire, veg, distance[i][j], i, j, del_t)
+                        distance[i][j] = advanceBurn(fire, veg, spread_prob, distance[i][j], i, j, del_t)
                         # calculate the total percentage on fire for cell i,j based on contributions from
                             # all neighbors (see 'spreadFire' helper function)
                         tempFire[i][j] = spreadFire(distance[i][j], cell_transition[1])

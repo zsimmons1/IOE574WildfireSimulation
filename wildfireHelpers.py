@@ -1,68 +1,140 @@
 # Include libraries
-import os 
-import matplotlib.pyplot as plt
-import matplotlib.lines as lines
 import numpy as np
-import rasterio
-from rasterio.plot import show
 import math
-from astropy.visualization import make_lupton_rgb
 
 # Calculates the area of burn in cell i,j resulting from the spread distance in each direction and the 
 # intensity of spread in each direction. Area of spread is then used to calculate total proportion of 
 # the cell which is on fire.
     # distance is an 8-element vector of the distance of spread in each direction, from neighbors in the
-    # following order: SW, W, NW, S, N, SE, E, NE
+        # following order: SW, W, NW, S, N, SE, E, NE
     # spread_prob is an 8-element vector of the spread probability from each neighbor to cell i,j with 
-    # neighbor order same as distance vector
+        # neighbor order same as distance vector
 def spreadFire(distance, spread_prob):
     orthogonal = [1, 3, 4, 6]
     diagonal = [0, 2, 5, 7]
     burnArea = 0
-    # Add burn contribution from orthogonal neighbors
+
+    # Equation 1: Add burn contribution from orthogonal neighbor
     for i in orthogonal:
-        burnArea +=30*spread_prob[i]*distance[i]    
-    # Add burn contribution from diagonal neighbors
+        burnArea += 30*spread_prob[i]*distance[i]    
+
+    # Equation 2: Add burn contribution from diagonal neighbor
     for i in diagonal:
         if distance[i] < 15*pow(2, 0.5):
-            # Fire area is a triangle
+            # Equation 2.1: Add burn contribution from diagonal neighbor when diagonal distance ≤ half
             burnArea += spread_prob[i]*pow(distance[i], 2)
         else:
-            # Non-fire area is a triangle  
+            # Equation 2.2: Add burn contribution from diagonal neighbor when diagonal distance ≥ half 
             burnArea += spread_prob[i]*(900-pow((30*pow(2, 0.5)-distance[i]), 2)) 
-    # Subtract overlap from orthogonal corner overlap
+
+    # Equation 3: Subtract overlap from opposite orthogonal neighbors (1-6, 3-4)
+    for i, j in [1, 6], [3, 4]:
+        # Equation 3.1: Subtract overlap from opposite orthogonal neighbors when they overlap (1-6, 3-4)
+        if (distance[i] + distance[j]) > 30:
+            burnArea -= 30*((spread_prob[i] + spread_prob[j])/2)*(30 - (distance[i]+distance[j])) 
+        # Else, Equation 3.0: opposite orthogonal neighbors do not overlap
+
+    # Equation 4: Subtract overlap from kitty-corner orthogonal neighbors (1-3, 1-4, 6-3, 6-4)
     for i in [1, 6]:
         for j in [3, 4]:
-            burnArea -= spread_prob[i]*spread_prob[j]*distance[i]*distance[j]
-    # Subtract overlap from orthogonal parallel overlap
-    if (distance[1] + distance[6]) > 30:
-        burnArea -= 30*spread_prob[1]*spread_prob[6]*abs(distance[1]-distance[6]) 
-    if (distance[3] + distance[4])  > 30:
-        burnArea = burnArea - 30*spread_prob[3]*spread_prob[4]*abs(distance[3]-distance[4])   
-    # Subtract overlap from parallel diagonal cells (0-2, 0-5, 7-2, 7-5)
-    for i in [1, 7]:
+            burnArea -= ((spread_prob[i] + spread_prob[j])/2)*distance[i]*distance[j]
+
+    # Equation 5: Subtract overlap from opposite diagonal neighbors (0-7, 2-5)
+    for i, j in [0, 7], [2, 5]:    
+        if distance[i]+distance[j] > 30*pow(2, 0.5):
+            # Equation 5.1: Subtract overlap from opposite diagonal neighbors when both diagonal distances > half
+            if (distance[i] > 15*pow(2, 0.5)) & (distance[j] > 15*pow(2, 0.5)):
+                A = 900-pow((30*pow(2, 0.5)-distance[i]), 2)
+                B = 900-pow((30*pow(2, 0.5)-distance[j]), 2)
+                burnArea -= -((spread_prob[i] + spread_prob[j])/2)*(900 - A - B)
+            # Equation 5.2: Subtract overlap from opposite diagonal neighbors when only one diagonal distance is > half
+            else:
+                if distance[i] > 15*pow(2, 0.5):
+                    B = pow(distance[j], 2)
+                    A_inv = pow((30*pow(2, 0.5)-distance[i]), 2) 
+                else: 
+                    B = pow(distance[i], 2)
+                    A_inv = pow((30*pow(2, 0.5)-distance[j]), 2) 
+                burnArea -= ((spread_prob[i] + spread_prob[j])/2)*(B - A_inv)  
+        # Else, Equation 5.0: opposite diagonal neighbors do not overlap 
+        
+    # Equation 6: Subtract overlap from diagonal neighbors in same row or same column (0-2, 0-5, 7-2, 7-5)
+    for i in [0, 7]:
         for j in [2, 5]:
-            # TODO: Finish equation
-            burnArea = burnArea
-    # Subtract overlap from diagonal diagonal cells (0-7, 2-5)
-    if (distance[0]+distance[7]) > 30*pow(2, 0.5):
-        # TODO: Test equation
-        burnArea = burnArea - (900 - (spread_prob[0]*pow(30*pow(2, 0.5) - distance[0], 2)
-        +spread_prob[7]*pow(30*pow(2, 0.5) - distance[7], 2)))
-    if (distance[2]+distance[5]) > 30*pow(2, 0.5):
-        # TODO: Test equation
-        burnArea = burnArea - (900 - (spread_prob[2]*pow(30*pow(2, 0.5) - distance[2], 2)
-        +spread_prob[5]*pow(30*pow(2, 0.5) - distance[5], 2)))
-    # Subtract overlap from diagonal and orthogonal adjacent neighbors
-    # (0-1, 0-3, 2-1, 2-4, 5-3, 5-6, 7-4, 7-6)
-        # TODO: Finish equation
-    # Subtract overlap from diagonal and orthogonal non-adjacent neighbors   
-    # (0-4, 0-6, 2-3, 2-5, 5-1, 5-4, 7-1, 7-3)     
-        # TODO: Finish equation
+            if (pow(2, 0.5)*distance[i] + pow(2, 0.5)*distance[j] > 30) & (distance[i]!= 0) & (distance[j]!= 0):
+                # Equation 6.1: Subtract overlap from diagonal neighbors in same row or same column when both diagonal distances ≤ half
+                if (distance[i] <= 15*pow(2, 0.5)) & (distance[j] <= 15*pow(2, 0.5)):
+                    print(burnArea)
+                    burnArea -= ((spread_prob[i] + spread_prob[j])/2)*(pow(30-(pow(2, 0.5)*distance[i] - pow(2, 0.5)*distance[j]), 2) / 4)
+                    print(burnArea)
+                elif (distance[i] >= 15*pow(2, 0.5)) & (distance[j] >= 15*pow(2, 0.5)):
+                    # Equation 6.2: Subtract overlap from diagonal neighbors in same row or same column when both diagonal distances are > half and there is not complete overlap
+                    if pow(2, 0.5)*(30*pow(2, 0.5) - distance[i]) + pow(2, 0.5)*(30*pow(2, 0.5) - distance[j]) > 30:
+                        A = pow((30*pow(2, 0.5)-distance[i]), 2)
+                        B = pow((30*pow(2, 0.5)-distance[j]), 2)
+                        C = pow(30 - (30*pow(2, 0.5)-distance[i] + 30*pow(2, 0.5)-distance[j]), 2)
+                        burnArea -= ((spread_prob[i] + spread_prob[j])/2)*(900 - A - B + C)
+                    else:
+                    # Equation 6.3: Subtract overlap from diagonal neighbors in same row or same column when both diagonal distances are > half and there is complete overlap
+                        burnArea -= ((spread_prob[i] + spread_prob[j])/2)*(900 - pow((30*pow(2, 0.5)-distance[i]), 2) - pow((30*pow(2, 0.5)-distance[j]), 2))
+                # Equation 6.4: Subtract overlap from diagonal neighbors in same row or same column when only one diagonal distance is > half and there is not complete overlap
+                elif pow(2, 0.5)*distance[j] + pow(2, 0.5)*(30*pow(2, 0.5) - distance[i]) > 30:  
+                    if distance[i] > 15*pow(2, 0.5):
+                        B = pow(distance[j], 2)
+                        B_no_C = pow((30 - (pow(2, 0.5)*distance[j] + pow(2, 0.5)*(30*pow(2, 0.5) - distance[i])))*pow(2, 0.5), 2)
+                    else:
+                        B = pow(distance[i], 2)
+                        B_no_C = pow((30 - (pow(2, 0.5)*distance[i] + pow(2, 0.5)*(30*pow(2, 0.5) - distance[j])))*pow(2, 0.5), 2)
+                    burnArea -= ((spread_prob[i] + spread_prob[j])/2)*(B - B_no_C) 
+                # Equation 6.5: Subtract overlap from diagonal neighbors in same row or same column when only one diagonal distance is > half and there complete overlap
+                else:
+                    if distance[i] > 15*pow(2, 0.5):
+                        burnArea -= ((spread_prob[i] + spread_prob[j])/2)*pow(distance[j], 2)
+                    else:
+                        burnArea -= ((spread_prob[i] + spread_prob[j])/2)*pow(distance[i], 2)
+            # Else: Equation 6.0: Diagonal neighbors in same row or column do not overlap
+
+    # Equation 7: Subtract overlap from adjacent diagonal and orthogonal neighbors (0-1, 0-3, 2-1, 2-4, 5-3, 5-6, 7-4, 7-6)
+    for i, j in [0,1], [0,3], [2,1], [2,4], [5,3], [5,6], [7,4], [7,6]:
+        if distance[i]!=0 & distance[j]!=0:
+            # Equation 7.1: Subtract overlap from adjacent orthogonal and diagonal neighbors when orthogonal distance completely overlaps diagonal
+            if (distance[i] <= 15*pow(2, 0.5)) & (distance[j] > pow(2, 0.5)*distance[i]):
+                burnArea -= ((spread_prob[i] + spread_prob[j])/2)*pow(distance[i], 2)
+            # Equation 7.2: Subtract overlap from adjacent orthogonal and diagonal neighbors when diagonal distance completely overlaps orthogonal    
+            elif pow(2, 0.5)*(30*pow(2, 0.5)-distance[i]) < distance[j]:
+                burnArea -= ((spread_prob[i] + spread_prob[j])/2)*30*distance[j]
+            # Equation 7.3: Subtract overlap from adjacent orthogonal and diagonal neighbors when diagonal distance ≤ half and there is not complete overlap   
+            elif (distance[i] <= 15*pow(2, 0.5)) & (distance[j] < pow(2, 0.5)*distance[i]):
+                B = pow(distance[i], 2)
+                B_no_C = pow(pow(2, 0.5)*distance[i] - distance[j], 2)/2
+                burnArea -= ((spread_prob[i] + spread_prob[j])/2)*(B-B_no_C)
+            # Equation 7.4: Subtract overlap from adjacent orthogonal and diagonal neighbors when diagonal distance ≥ half 
+            elif pow(2, 0.5)*(30*pow(2, 0.5)-distance[i]) + distance[j] > 30:   
+                A_side = 30 - (pow(2, 0.5)*(30*pow(2, 0.5)-distance[i]) + distance[j])
+                burnArea -= ((spread_prob[i] + spread_prob[j])/2)*(pow(A_side, 2)/2)
+
+    # Equation 8: Subtract overlap from non-adjacent diagonal and orthogonal  neighbors (0-4, 0-6, 2-3, 2-5, 5-1, 5-4, 7-1, 7-3)     
+    for i, j in [0,4], [0,6], [2,3], [2,5], [5,1], [5,4], [7,1], [7,3]:
+        if ((pow(2, 0.5)*distance[i] + distance[j] > 30) & (distance[i]!=0) & (distance[j]!=0)):
+            print("here")
+            # Equation 8.1: Subtract overlap from non-adjacent orthogonal and diagonal neighbors when the diagonal distance ≤ half 
+            if((distance[i] <= 15*pow(2, 0.5)) & (pow(2, 0.5)*distance[i] + distance[j] > 30)):
+                print("8.1")
+                burnArea -= ((spread_prob[i] + spread_prob[j])/2)*(pow((30 - (pow(2, 0.5)*distance[i] + distance[j])), 2)/2)
+            # Equation 8.2: Subtract overlap from non-adjacent orthogonal and diagonal neighbors when the diagonal distance ≥ half and does not fill the entire area
+            elif((distance[i] > 15*pow(2, 0.5)) & (pow(2, 0.5)*(30*pow(2, 0.5)-distance[i])+distance[j] < 30)):
+                A_inv = 900 - 30*distance[j] 
+                B_inv = pow((30*pow(2, 0.5)-distance[i]), 2)
+                unburned = pow(((pow(2, 0.5)*(30*pow(2, 0.5)-distance[i]))-distance[j]), 2)
+                burnArea -= ((spread_prob[i] + spread_prob[j])/2)*(900 - B_inv - A_inv + unburned)
+            # Equation 8.3: Subtract overlap from non-adjacent orthogonal and diagonal neighbors when the diagonal distance ≥ half and fills the entire area       
+            elif((distance[i] > 15*pow(2, 0.5)) & (pow(2, 0.5)*(30*pow(2, 0.5)-distance[i])+distance[j] > 30)):
+                A_inv = 900 - 30*distance[j] 
+                B_inv = pow((30*pow(2, 0.5)-distance[i]), 2)
+                burnArea -= ((spread_prob[i] + spread_prob[j])/2)*(900 - A_inv - B_inv)
+        # Else: Equation 8.0: Non-adjacent orthogonal and diagonal neighbors do not overlap
+    
+    # Return burn percentage
     return burnArea / 900
 
-# Test spreadFire:
-distance = [0, 0, 0, 20, 15, 0, 0, 0]    
-spread_prob = [1, 1, 1, 1, 1, 1, 1, 1]
-burnPercent = spreadFire(distance, spread_prob)
-print(burnPercent)
+    

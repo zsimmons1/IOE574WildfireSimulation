@@ -10,7 +10,7 @@ from astropy.visualization import make_lupton_rgb
 from wildfireHelpers import *
 
 # Read data and initialize variables
-img = rasterio.open('/Users/sprin/OneDrive/Desktop/IOE574/TermProject/IOE574WildfireSimulation/us_210evc.tif')
+img = rasterio.open('/Users/Zack/Desktop/IOE574/TermProject/IOE574WildfireSimulation/us_210evc.tif')
 # 'map' holds original vegetation raster data from TIFF file
 map = img.read()
 # 'veg' is a 2D matrix containing the cell vegetation type as an integer (0 = unburnable, 1 = trees, 2 = shrub, 3 = herb)
@@ -52,10 +52,10 @@ while t > 25:
                         wind_direction = 180
                         # determine which neighbors to spread fire from
                             # (see 'ignite' helper function)
-                        cell_transition, spread_prob = igniteCell(fire, distance[i][j], i, j, wind_speed, wind_direction)    
+                        cell_transition, spread_prob  = igniteCell(fire, i, j, distance[i][j], wind_speed, wind_direction)
                         # determine the amount of spread from each neighbor which has ignitied cell i,j
                             # (see 'advanceBurn' helper function)
-                        distance[i][j] = advanceBurn(fire, veg, cell_transition, distance[i][j], i, j, del_t)
+                        distance[i][j] = advanceBurn(veg[i][j], cell_transition, distance[i][j], del_t)
                         # calculate the total percentage on fire for cell i,j based on contributions from
                             # all neighbors (see 'spreadFire' helper function)
                         tempFire[i][j] = spreadFire(distance[i][j], spread_prob)

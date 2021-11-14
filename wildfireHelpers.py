@@ -2,12 +2,24 @@
 import numpy as np
 import math
 
-# Calculates the area of burn in cell i,j resulting from the spread distance in each direction and the 
+# igniteCell: 
+def igniteCell(fire, i, j, wind_speed, wind_direction):
+    ignite = [0, 0, 0, 0, 0, 0, 0, 0]
+    spread_prob = [0, 0, 0, 0, 0, 0, 0, 0]
+    return ignite, spread_prob
+
+# advanceBurn: 
+def advanceBurn(fire, veg, distance, i, j, del_t):
+    # shape stores the Weibull distribution shape for each vegetation type
+    shape = [11.4, 13.6, 13.0]
+    return distance
+
+# spreadFire: Calculates the area of burn in cell i,j resulting from the spread distance in each direction and the 
 # intensity of spread in each direction. Area of spread is then used to calculate total proportion of 
 # the cell which is on fire.
-    # distance is an 8-element vector of the distance of spread in each direction, from neighbors in the
-        # following order: SW, W, NW, S, N, SE, E, NE
-    # spread_prob is an 8-element vector of the spread probability from each neighbor to cell i,j with 
+    # 'distance' is an 8-element vector of the distance of spread in each direction, from neighbors in the
+        # follosdjkj  wing order: SW, W, NW, S, N, SE, E, NE
+    # 'spread_prob' is an 8-element vector of the spread probability from each neighbor to cell i,j with 
         # neighbor order same as distance vector
 def spreadFire(distance, spread_prob):
     orthogonal = [1, 3, 4, 6]
@@ -137,4 +149,35 @@ def spreadFire(distance, spread_prob):
     # Return burn percentage
     return burnArea / 900
 
+# showResults: Plots the map of the area pre-burn and post-burn
+    # 'fire' is a 2D matrix containing the percentage on fire of each cell on the map
+    # 'veg' is a 2D matrix containing the cell vegetation type as an integer (0 = unburnable, 1 = trees, 2 = shrub, 3 = herb)
+def showResults(fire, veg):
+    # Build pre-burn landscape image
+    rgbIMG = np.zeros([np.size(map, 1), np.size(map, 2), 3], dtype=int)
+    r = np.add(np.add(np.where(veg == 1, 56, 0), np.where(veg == 2, 147, 0)), np.where(veg == 3, 219, 0))
+    g = np.add(np.add(np.where(veg == 1, 118, 0), np.where(veg == 2, 196, 0)), np.where(veg == 3, 235, 0))
+    b = np.add(np.add(np.where(veg == 1, 29, 0), np.where(veg == 2, 125, 0)), np.where(veg == 3, 118, 0))
+    rgbIMG = np.dstack((r, g, b))
     
+    # Overlay burn
+    new_r = np.where(fire > 0, 255, r)
+    new_g = np.where(fire > 0, 0, g)
+    new_b = np.where(fire > 0, 0, b)
+    newRGB = np.dstack((new_r, new_g, new_b))
+
+    # Create custom legends
+    ax2legendElements = [lines.Line2D([0], [0], marker='o', color='w', label='Fire', markerfacecolor='#ff0000', markersize=10),
+                        lines.Line2D([0], [0], marker='o', color='w', label='Tree', markerfacecolor='#38761d', markersize=10), 
+                        lines.Line2D([0], [0], marker='o', color='w', label='Shrub', markerfacecolor='#93c47d', markersize=10), 
+                        lines.Line2D([0], [0], marker='o', color='w', label='Herb', markerfacecolor='#dbeb76', markersize=10)]
+
+    # Plot figures
+    fig, ((ax1, ax2)) = plt.subplots(1, 2)
+    ax1.imshow(rgbIMG)
+    ax2.imshow(newRGB)
+    ax2.legend(handles = ax2legendElements, bbox_to_anchor=(1.5, 1.0), loc='upper right')
+    plt.show()
+    show(fire, cmap='Reds')
+
+    return 0

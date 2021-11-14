@@ -7,6 +7,7 @@ import rasterio
 from rasterio.plot import show
 import math
 from astropy.visualization import make_lupton_rgb
+from wildfireHelpers import *
 
 # Read data and initialize variables
 img = rasterio.open('/Users/Zack/Desktop/IOE574/TermProject/IOE574WildfireSimulation/us_210evc.tif')
@@ -51,22 +52,22 @@ while t > 25:
                         wind_direction = 180
                         # determine which neighbors to spread fire from
                             # (see 'ignite' helper function)
-                        cell_transition, spread_prob  = igniteCell(fire, i, j, wind_speed, wind_direction)    
+                        cell_transition, spread_prob  = igniteCell(fire, i, j, distance[i][j], wind_speed, wind_direction)
                         # determine the amount of spread from each neighbor which has ignitied cell i,j
                             # (see 'advanceBurn' helper function)
-                        distance[i][j] = advanceBurn(fire, veg, spread_prob, distance[i][j], i, j, del_t)
+                        distance[i][j] = advanceBurn(veg[i][j], cell_transition, distance[i][j], del_t)
                         # calculate the total percentage on fire for cell i,j based on contributions from
                             # all neighbors (see 'spreadFire' helper function)
-                        tempFire[i][j] = spreadFire(distance[i][j], cell_transition[1])
+                        tempFire[i][j] = spreadFire(distance[i][j], spread_prob)
                         # update 'tempFireBorder' to be the fire border of the current time step
                         if tempFire[i][j] >= 0:
                             if i < fireBorder[0]: tempFireBorder[0] = i
                             elif i > fireBorder[1]: tempFireBorder[1] = i
-                            if j < fireBorder[2]: tempFireBorder[2] = i
-                            elif j > fireBorder[3]: tempFireBorder[3] = i
+                            if j < fireBorder[2]: tempFireBorder[2] = j
+                            elif j > fireBorder[3]: tempFireBorder[3] = j
                     
     fire = tempFire # update fire matrix 
-    fireBorder = [min_i, max_i, min_j, max_j] # update fire border
+    fireBorder = tempFireBorder # update fire border
 
 # Show results
 showResults(fire, veg)

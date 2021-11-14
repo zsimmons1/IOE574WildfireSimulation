@@ -6,13 +6,26 @@ import math
 def igniteCell(fire, i, j, wind_speed, wind_direction):
     ignite = [0, 0, 0, 0, 0, 0, 0, 0]
     spread_prob = [0, 0, 0, 0, 0, 0, 0, 0]
+    
+    
     return ignite, spread_prob
 
 
 # advanceBurn: 
-def advanceBurn(fire, veg, distance, i, j, del_t):
+def advanceBurn(veg, cell_transition, distance, del_t):
     # shape stores the Weibull distribution shape for each vegetation type
+    # Cell transition, size 8, 0s and 1s, 0 not contributing, 1 contributing
     shape = [11.4, 13.6, 13.0]
+    
+    for x in range(len(distance)):
+        # If this neighbor is contributing, then we will calculate the distance
+        if cell_transition[x] == 1:
+            del_x = math.pow(10, np.random.weibull(shape[veg-1]))*del_t
+            if distance[x] + del_x > 30:
+                distance[x] = 30
+            else: 
+                distance[x] += del_x
+    
     return distance
 
 

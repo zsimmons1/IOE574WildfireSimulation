@@ -8,11 +8,13 @@ def igniteCell(fire, i, j, wind_speed, wind_direction):
     spread_prob = [0, 0, 0, 0, 0, 0, 0, 0]
     return ignite, spread_prob
 
+
 # advanceBurn: 
 def advanceBurn(fire, veg, distance, i, j, del_t):
     # shape stores the Weibull distribution shape for each vegetation type
     shape = [11.4, 13.6, 13.0]
     return distance
+
 
 # spreadFire: Calculates the area of burn in cell i,j resulting from the spread distance in each direction and the 
 # intensity of spread in each direction. Area of spread is then used to calculate total proportion of 
@@ -148,6 +150,7 @@ def spreadFire(distance, spread_prob):
     
     # Return burn percentage
     return burnArea / 900
+
 
 # showResults: Plots the map of the area pre-burn and post-burn
     # 'fire' is a 2D matrix containing the percentage on fire of each cell on the map

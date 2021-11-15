@@ -4,6 +4,39 @@ import math
 import matplotlib.pyplot as plt
 import matplotlib.lines as lines
 from rasterio.plot import show
+from scipy.stats import weibull_min
+import pandas
+
+# initializeWind: Based on input weather data, determine the appropriate Weibull distribution for wind speed
+# and draw from this distribution to determine the initial wind speed across all cells
+def initializeWind():
+    data = pandas.read_csv("weather.csv")
+    messy_wind_speed = data["HourlyWindSpeed"]
+    # remove nan values
+    wind_speed = [x for x in messy_wind_speed if np.isnan(x) == False]
+    # determine the Weibull distrbution curve that fits the weather data
+    shape, loc, scale = weibull_min.fit(wind_speed, floc = 1)
+    # generate a random wind speeds from a weibull distribution using parameters generated from actual data
+    initial_wind = weibull_min.rvs(shape, loc, scale, size=1)
+    # return the generated initial wind as a single value (not an array)
+    return initial_wind[0]
+
+# updateWind: Determines the wind direction and velocity for cell i,j
+    # 'wind_speed' is the wind speed across all cells from the previous time period
+    # 'wind_direction' is the angle (in degrees, where East is 0 degrees) of the wind across all cells from the 
+        # previous time step
+def updateWind(wind_speed, wind_direction):
+    # Apply multaplicative uniform noise to the wind speed U[0.8, 1.2] per Trucchia et al
+    wind_speed = np.random.uniform(0.8*wind_speed, 1.2*wind_speed)
+    # Apply multaplicative uniform noise to the wind direction U[−11.25◦, 11.25◦] per Trucchia et al
+    wind_direction = np.random.uniform(wind_direction - 11.25, wind_direction + 11.25)
+    # Ensure the angle is between 0 and 360
+    if wind_direction < 0:
+        wind_direction += 360
+    elif wind_direction > 360:
+        wind_direction -= 360    
+    # Return the updated wind speed and wind direction
+    return wind_speed, wind_direction
 
 # igniteCell: 
 def igniteCell(fire, i, j, distance, wind_speed, wind_direction):

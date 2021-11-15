@@ -1,16 +1,18 @@
 # Include libraries
 import numpy as np
 import math
+import matplotlib.pyplot as plt
+import matplotlib.lines as lines
+from rasterio.plot import show
 
 # igniteCell: 
 def igniteCell(fire, i, j, distance, wind_speed, wind_direction):
     cell_transition = [0, 0, 0, 0, 0, 0, 0, 0]
-    spread_angles = [45, 0, 315, 90, 270, 135, 180, 225]
-
+    spread_angles = [315, 270, 225, 0, 180, 45, 90, 135]
     # Set baseline spread probability for each neighbor as the percent on fire of that neighbor
-    spread_prob = [fire[i-1][j+1], fire[i-1][j], fire[i-1][j-1],
-                   fire[i][j+1], fire[i][j-1],
-                   fire[i+1][j+1], fire[i+1][j], fire[i+1][j-1]]        
+    spread_prob = [fire[i-1][j-1], fire[i-1][j], fire[i-1][j+1],
+                   fire[i][j-1], fire[i][j+1],
+                   fire[i+1][j-1], fire[i+1][j], fire[i+1][j+1]]        
 
     # Determine which neighbor cells contribute to the fire in cell i,j
     for k in range(len(distance)):
@@ -29,15 +31,16 @@ def igniteCell(fire, i, j, distance, wind_speed, wind_direction):
             # TODO: Create function(s) to determine alpha_w
             # set function based on wind speed
             # input angle into funciton to get alpha_w facor
-            alpha_w = 0.5
+            alpha_w = 1
             spread_prob[k] = spread_prob[k]*alpha_w
             
             # Ensure all probabilities are no more than 1
             if spread_prob[k] > 1:
                 spread_prob[k] = 1
 
-            # Draw from uniform distribution to determine if neighbor k will spread to cell i,j     
-            if np.random.uniform < spread_prob[k]:
+            # Draw from uniform distribution to determine if neighbor k will spread to cell i,j  
+            u = np.random.uniform(0,1)   
+            if u < spread_prob[k]:
                 cell_transition[k] = 1          
             # Else, neighbor k does not contribute to the fire in cell i,j, so 'cell_transition[k]' remains 0
 
@@ -67,7 +70,7 @@ def advanceBurn(veg, cell_transition, distance, del_t):
 # intensity of spread in each direction. Area of spread is then used to calculate total proportion of 
 # the cell which is on fire.
     # 'distance' is an 8-element vector of the distance of spread in each direction, from neighbors in the
-        # following order: SW, W, NW, S, N, SE, E, NE
+        # following order: NW, N, NE, W, E, SW, S, SE
     # 'spread_prob' is an 8-element vector of the spread probability from each neighbor to cell i,j with 
         # neighbor order same as distance vector
 def spreadFire(distance, spread_prob):
@@ -157,7 +160,7 @@ def spreadFire(distance, spread_prob):
 
     # Equation 7: Subtract overlap from adjacent diagonal and orthogonal neighbors (0-1, 0-3, 2-1, 2-4, 5-3, 5-6, 7-4, 7-6)
     for i, j in [0,1], [0,3], [2,1], [2,4], [5,3], [5,6], [7,4], [7,6]:
-        if distance[i]!=0 & distance[j]!=0:
+        if (distance[i]!=0) & (distance[j]!=0):
             # Equation 7.1: Subtract overlap from adjacent orthogonal and diagonal neighbors when orthogonal distance completely overlaps diagonal
             if (distance[i] <= 15*pow(2, 0.5)) & (distance[j] > pow(2, 0.5)*distance[i]):
                 burnArea -= ((spread_prob[i] + spread_prob[j])/2)*pow(distance[i], 2)
@@ -202,7 +205,7 @@ def spreadFire(distance, spread_prob):
     # 'veg' is a 2D matrix containing the cell vegetation type as an integer (0 = unburnable, 1 = trees, 2 = shrub, 3 = herb)
 def showResults(fire, veg):
     # Build pre-burn landscape image
-    rgbIMG = np.zeros([np.size(map, 1), np.size(map, 2), 3], dtype=int)
+    rgbIMG = np.zeros([np.size(veg, 0), np.size(veg, 1), 3], dtype=int)
     r = np.add(np.add(np.where(veg == 1, 56, 0), np.where(veg == 2, 147, 0)), np.where(veg == 3, 219, 0))
     g = np.add(np.add(np.where(veg == 1, 118, 0), np.where(veg == 2, 196, 0)), np.where(veg == 3, 235, 0))
     b = np.add(np.add(np.where(veg == 1, 29, 0), np.where(veg == 2, 125, 0)), np.where(veg == 3, 118, 0))

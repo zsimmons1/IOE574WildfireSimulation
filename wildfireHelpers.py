@@ -18,13 +18,13 @@ def initializeWind():
     shape, loc, scale = weibull_min.fit(wind_speed, floc = 1)
     # generate a random wind speeds from a weibull distribution using parameters generated from actual data
     initial_wind = weibull_min.rvs(shape, loc, scale, size=1)
-    # return the generated initial wind as a single value (not an array)
-    return initial_wind[0]
+    # return the generated initial wind as a single value (not an array) in km/hr
+    return (60/1000)*initial_wind[0]
 
 # updateWind: Determines the wind direction and velocity for cell i,j
-    # 'wind_speed' is the wind speed across all cells from the previous time period
+    # 'wind_speed' is the wind speed (in km/hour) across all cells from the previous time period
     # 'wind_direction' is the angle (in degrees, where East is 0 degrees) of the wind across all cells from the 
-        # previous time step
+        # previous time period
 def updateWind(wind_speed, wind_direction):
     # Apply multaplicative uniform noise to the wind speed U[0.8, 1.2] per Trucchia et al
     wind_speed = np.random.uniform(0.8*wind_speed, 1.2*wind_speed)
@@ -38,7 +38,16 @@ def updateWind(wind_speed, wind_direction):
     # Return the updated wind speed and wind direction
     return wind_speed, wind_direction
 
-# igniteCell: 
+# igniteCell: Determines which of the neighbors of cell i,j will contribute to the fire spread of cell i,j 
+# during the current timestep
+    # 'fire'
+    # 'i' is the latitude index of the current cell of interest
+    # 'j' is the longitutde index of the current cell of interest
+    # 'distance' is the 8-element vector of spread distances (from the last time period) from each neighbor 
+        # from the 3-D distance matrix at cell i,j 
+    # 'wind_speed' is the wind speed (in km/hour) across all cells for the current time period
+    # 'wind_direction' is the angle (in degrees, where East is 0 degrees) of the wind across all cells for the 
+        # current time step
 def igniteCell(fire, i, j, distance, wind_speed, wind_direction):
     cell_transition = [0, 0, 0, 0, 0, 0, 0, 0]
     spread_angles = [315, 270, 225, 0, 180, 45, 90, 135]
@@ -81,14 +90,23 @@ def igniteCell(fire, i, j, distance, wind_speed, wind_direction):
     return cell_transition, spread_prob
 
 
-# advanceBurn: 
+# advanceBurn: Determine the distance of spread of the fire from each contributing neighbor to cell i,j. These
+# distances are determined from the previous distance and velocity of fire spread sampled from a Weibull distribution
+    # 'veg' is a 2D matrix containing the cell vegetation type as an integer 
+        # (0 = unburnable, 1 = trees, 2 = shrub, 3 = herb)
+    # 'cell_transition' is an 8-element vector for the neighbors of cell i,j where 0 means neighbor k does not
+        # contribute to the fire spread in cell i,j during the current time period and 1 means neighbor k does
+        # contribute to the fire spread in cell i,j during the current time period
+    # 'distance' is the 8-element vector of spread distances (from the last time period) from each neighbor 
+        # from the 3-D distance matrix at cell i,j  
+    # 'del_t' is the size of each time step
 def advanceBurn(veg, cell_transition, distance, del_t):
     # shape stores the Weibull distribution shape for each vegetation type
-    # Cell transition, size 8, 0s and 1s, 0 not contributing, 1 contributing
     shape = [11.4, 13.6, 13.0]
     
     for x in range(len(distance)):
         # If this neighbor is contributing, then we will calculate the distance
+        # TODO: adjust so that diagonal neighbors can have distances up to 30*pow(2, 0.5)
         if cell_transition[x] == 1:
             del_x = math.pow(10, np.random.weibull(shape[veg-1]))*del_t
             if distance[x] + del_x > 30:

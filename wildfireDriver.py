@@ -51,7 +51,7 @@ while t < 2:
         if i < np.size(fire, 0)-1: # ensures cell is in latitute bounds of map
             for j in range(fireBorder[2] - 1, fireBorder[3] + 2): # j is longitude index
                 if j < np.size(fire, 1)-1: # ensure cell is in longitude bounds of map
-                    if (veg[i][j]!=0) or (fire[i][j]==1): # skip all unburnable cells or all completely on fire cells
+                    if (veg[i][j]!=0) & (fire[i][j]!=1): # skip all unburnable cells or all completely on fire cells
                         # determine which neighbors to spread fire from (see 'ignite' helper function)  
                         cell_transition, spread_prob  = igniteCell(fire, i, j, distance[i][j], wind_speed, wind_direction)
                         # determine the amount of spread from each neighbor which has ignitied cell i,j

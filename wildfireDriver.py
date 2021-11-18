@@ -22,6 +22,8 @@ den = np.mod(map[0], np.ones((np.size(map, 1), np.size(map, 2)), dtype=int)*100)
 fire = np.zeros((np.size(map, 1), np.size(map, 2)), dtype=float)
 # 'distance' is a 3D matrix containing the distance of fire spread for each cell from each neighboring cell
 distance = np.zeros((np.size(map, 1), np.size(map, 2), 8), dtype=float)
+# 'fire_timeline' is a 3D matrix containing the burn state of each cell at each time step in the simulation
+fire_timeline = np.zeros((np.size(map, 1), np.size(map, 2), 20), dtype=float)
 starti = 28 # 'starti' is the i index (corresponding to latitude) where the fire initiates
 startj = 24 # 'startj' is the j index (corresponding to longitude) where the fire initiates
 t = 0 # time elapsed, in hours
@@ -37,8 +39,9 @@ wind_direction = 0 # TODO: Sample wind_direction from data too?
 
 # Spread fire and build fire lines until fire is 95% contained OR fire spreads beyond map borders(?)
 # TODO: Adjust to incorporate fire lines and 95% containment
-while t < 2:
-    # print(t)
+count = -1
+while t < 4:
+    count += 1
     t += del_t # increment time
     tempFire = copy.deepcopy(fire) # 'tempFire' is a temporary fire matrix to store new % of fire info. Use of this temp
         # matrix ensures that all fire spread depends on the state of spread in the previous time step, 
@@ -60,7 +63,7 @@ while t < 2:
                         # calculate the total percentage on fire for cell i,j based on contributions from
                             # all neighbors (see 'spreadFire' helper function)
                         # spread_prob = [1, 1, 1, 1, 1, 1, 1, 1]    
-                        tempFire[i][j] = spreadFire(distance[i][j], spread_prob)
+                        tempFire[i][j] = spreadFire(fire[i][j], distance[i][j], spread_prob)
                         # update 'tempFireBorder' to be the fire border of the current time step
                         if tempFire[i][j] > 0:
                             if i < fireBorder[0]: 
@@ -70,13 +73,20 @@ while t < 2:
                             if j < fireBorder[2]: 
                                 tempFireBorder[2] = j
                             elif j > fireBorder[3]: 
-                                tempFireBorder[3] = j            
+                                tempFireBorder[3] = j 
+                        if count > 0:
+                            if ((fire_timeline[i][j][count-1] > 0) & (tempFire[i][j]==0)):   
+                                print("ERROR! Reseting to zero")                
     # update the wind speed and direction across all cells based for next time step based on current time step
         # wind speed and direction
     wind_speed, wind_direction = updateWind(wind_speed, wind_direction)
 
     fire = copy.deepcopy(tempFire) # update fire matrix 
     fireBorder = copy.deepcopy(tempFireBorder) # update fire border
+    # fire_timeline[:][:][count] = tempFire # store fire status into timeline matrix
+    fire_timeline = np.insert(fire_timeline, count, tempFire, axis=2)
+    # showResults(fire, veg)
 
 # show results in map
 showResults(fire, veg)
+# showTimeline(fire_timeline, veg)

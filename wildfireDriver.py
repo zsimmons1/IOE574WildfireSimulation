@@ -10,7 +10,7 @@ from wildfireHelpers import *
 import copy
 
 # Read data and initialize variables
-img = rasterio.open('/Users/sprin/OneDrive/Desktop/IOE574/TermProject/IOE574WildfireSimulation/us_210evc.tif')
+img = rasterio.open('/Users/Zack/Desktop/IOE574/TermProject/IOE574WildfireSimulation/us_210evc.tif')
 # 'map' holds original vegetation raster data from TIFF file
 map = img.read()
 # 'veg' is a 2D matrix containing the cell vegetation type as an integer (0 = unburnable, 1 = trees, 2 = shrub, 3 = herb)
@@ -37,7 +37,7 @@ wind_direction = 0 # TODO: Sample wind_direction from data too?
 
 # Spread fire and build fire lines until fire is 95% contained OR fire spreads beyond map borders(?)
 # TODO: Adjust to incorporate fire lines and 95% containment
-while t < 2:
+while t < 10:
     # print(t)
     t += del_t # increment time
     tempFire = copy.deepcopy(fire) # 'tempFire' is a temporary fire matrix to store new % of fire info. Use of this temp
@@ -51,7 +51,7 @@ while t < 2:
         if i < np.size(fire, 0)-1: # ensures cell is in latitute bounds of map
             for j in range(fireBorder[2] - 1, fireBorder[3] + 2): # j is longitude index
                 if j < np.size(fire, 1)-1: # ensure cell is in longitude bounds of map
-                    if (veg[i][j]!=0) or (fire[i][j]==1): # skip all unburnable cells or all completely on fire cells
+                    if (veg[i][j]!=0) and (fire[i][j]!=1): # skip all unburnable cells or all completely on fire cells
                         # determine which neighbors to spread fire from (see 'ignite' helper function)  
                         cell_transition, spread_prob  = igniteCell(fire, i, j, distance[i][j], wind_speed, wind_direction)
                         # determine the amount of spread from each neighbor which has ignitied cell i,j
@@ -60,7 +60,9 @@ while t < 2:
                         # calculate the total percentage on fire for cell i,j based on contributions from
                             # all neighbors (see 'spreadFire' helper function)
                         # spread_prob = [1, 1, 1, 1, 1, 1, 1, 1]    
+                        print("before spreadFire tempFire[",i,"][",j,"]: ", tempFire[i][j])
                         tempFire[i][j] = spreadFire(distance[i][j], spread_prob)
+                        print("after spreadFire tempFire[",i,"][",j,"]: ", tempFire[i][j])
                         # update 'tempFireBorder' to be the fire border of the current time step
                         if tempFire[i][j] > 0:
                             if i < fireBorder[0]: 
@@ -74,7 +76,8 @@ while t < 2:
     # update the wind speed and direction across all cells based for next time step based on current time step
         # wind speed and direction
     wind_speed, wind_direction = updateWind(wind_speed, wind_direction)
-
+    showResults(fire, veg)
+    showResults(tempFire, veg)
     fire = copy.deepcopy(tempFire) # update fire matrix 
     fireBorder = copy.deepcopy(tempFireBorder) # update fire border
 

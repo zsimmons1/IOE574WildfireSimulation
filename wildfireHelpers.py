@@ -6,6 +6,7 @@ import matplotlib.lines as lines
 from rasterio.plot import show
 from scipy.stats import weibull_min
 import pandas
+import random
 
 # initializeWind: Based on input weather data, determine the appropriate Weibull distribution for wind speed
 # and draw from this distribution to determine the initial wind speed across all cells
@@ -102,12 +103,14 @@ def igniteCell(fire, i, j, distance, wind_speed, wind_direction):
     # 'del_t' is the size of each time step
 def advanceBurn(veg, cell_transition, distance, del_t):
     # shape stores the Weibull distribution shape for each vegetation type
-    shape = [11.4, 13.6, 13.0]
-    
+    shape = [11.4, 13.6, 13.0, 0]        
+
     for x in range(len(distance)):
         # If this neighbor is contributing, then we will calculate the distance
         # TODO: adjust so that diagonal neighbors can have distances up to 30*pow(2, 0.5)
-        if cell_transition[x] == 1:
+        if shape[veg-1] == 0:
+            distance[x] = 0
+        if cell_transition[x] == 1 and shape[veg-1] != 0:
             del_x = math.pow(10, np.random.weibull(shape[veg-1]))*del_t
             if distance[x] + del_x > 30:
                 distance[x] = 30
@@ -254,7 +257,8 @@ def showResults(fire, veg):
     ax2legendElements = [lines.Line2D([0], [0], marker='o', color='w', label='Fire', markerfacecolor='#ff0000', markersize=10),
                         lines.Line2D([0], [0], marker='o', color='w', label='Tree', markerfacecolor='#38761d', markersize=10), 
                         lines.Line2D([0], [0], marker='o', color='w', label='Shrub', markerfacecolor='#93c47d', markersize=10), 
-                        lines.Line2D([0], [0], marker='o', color='w', label='Herb', markerfacecolor='#dbeb76', markersize=10)]
+                        lines.Line2D([0], [0], marker='o', color='w', label='Herb', markerfacecolor='#dbeb76', markersize=10),
+                        lines.Line2D([0], [0], marker='o', color='w', label='Fire Line', markerfacecolor='#333000', markersize=10)]
 
     # Plot figures
     fig, ((ax1, ax2)) = plt.subplots(1, 2)
@@ -288,7 +292,8 @@ def showTimeline(fire_timeline, veg):
         ax2legendElements = [lines.Line2D([0], [0], marker='o', color='w', label='Fire', markerfacecolor='#ff0000', markersize=10),
                             lines.Line2D([0], [0], marker='o', color='w', label='Tree', markerfacecolor='#38761d', markersize=10), 
                             lines.Line2D([0], [0], marker='o', color='w', label='Shrub', markerfacecolor='#93c47d', markersize=10), 
-                            lines.Line2D([0], [0], marker='o', color='w', label='Herb', markerfacecolor='#dbeb76', markersize=10)]
+                            lines.Line2D([0], [0], marker='o', color='w', label='Herb', markerfacecolor='#dbeb76', markersize=10),
+                            lines.Line2D([0], [0], marker='o', color='w', label='Fire Line', markerfacecolor='#333000', markersize=10)]
 
     # Plot figures
     fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
@@ -301,6 +306,14 @@ def showTimeline(fire_timeline, veg):
     show(fire, cmap='Reds')
 
     return 0
+
+# Simple function to tell whether or not the fire will jump the fire line, can add complexity later
+def jumpFireLine():
+    new_number = random.random()
+    if new_number > 0.9:
+        return True
+    else:
+        return False
 
 
 # midPointCircleDraw: 

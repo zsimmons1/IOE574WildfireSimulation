@@ -13,7 +13,7 @@ import copy
 img = rasterio.open('/Users/Zack/Desktop/IOE574/TermProject/IOE574WildfireSimulation/us_210evc.tif')
 # 'map' holds original vegetation raster data from TIFF file
 map = img.read()
-# 'veg' is a 2D matrix containing the cell vegetation type as an integer (0 = unburnable, 1 = trees, 2 = shrub, 3 = herb)
+# 'veg' is a 2D matrix containing the cell vegetation type as an integer (0 = unburnable, 1 = trees, 2 = shrub, 3 = herb, 4 = fire boarder)
 veg = np.floor_divide(map[0], np.ones([np.size(map, 1), np.size(map, 2)], dtype=int)*100)
 # 'den' holds the densitity of the vegetation type as a number between 0 and 100
 # TODO: den is currently unused
@@ -40,7 +40,7 @@ wind_direction = 0 # TODO: Sample wind_direction from data too?
 # Spread fire and build fire lines until fire is 95% contained OR fire spreads beyond map borders(?)
 # TODO: Adjust to incorporate fire lines and 95% containment
 count = -1
-while t < 4:
+while t < 15:
     count += 1
     t += del_t # increment time
     tempFire = copy.deepcopy(fire) # 'tempFire' is a temporary fire matrix to store new % of fire info. Use of this temp
@@ -49,12 +49,32 @@ while t < 4:
     tempFireBorder = copy.deepcopy(fireBorder) # 'tempFireBorder' stores the edges of the fire for the current time step.
         # Use of this temp vector ensures that the nested for loops do not reach cells outside of the border
         # for the previous time step's fire (thus preventing spreading too quickly).    
-    # traverse the rectangular border around the fire edge plus one cell on each side   
+    # traverse the rectangular border around the fire edge plus one cell on each side
+    # Drawing boarder for fire lines at time = 2 hours, this is done as soon as t = 2
+    if t == 2:
+        # Setting the x,y lower and upper bounds for the fire line boarder
+        x_lower = tempFireBorder[0] - 5
+        x_upper = tempFireBorder[1] + 5
+        y_lower = tempFireBorder[2] - 5
+        y_upper = tempFireBorder[3] + 5
+        # Setting the vegitation type to 4 for the fire lines
+        for i in range(x_lower, x_upper+1):
+            canJump = jumpFireLine()
+            if canJump == False:
+                veg[i][y_lower] = 4 # Representative of fire boarder
+                veg[i][y_upper] = 4
+        for j in range(y_lower, y_upper+1):
+            canJump = jumpFireLine()
+            if canJump == False:
+                veg[x_lower][j] = 4
+                veg[x_upper][j] = 4
+        
+
     for i in range(fireBorder[0] - 1, fireBorder[1] + 2): # i is latitutde index
         if i < np.size(fire, 0)-1: # ensures cell is in latitute bounds of map
             for j in range(fireBorder[2] - 1, fireBorder[3] + 2): # j is longitude index
                 if j < np.size(fire, 1)-1: # ensure cell is in longitude bounds of map
-                    if (veg[i][j]!=0) and (fire[i][j]!=1): # skip all unburnable cells or all completely on fire cells
+                    if (veg[i][j]!=0) and (fire[i][j]!=1 and veg[i][j]!=4): # skip all unburnable cells or all completely on fire cells                        
                         # determine which neighbors to spread fire from (see 'ignite' helper function)  
                         cell_transition, spread_prob  = igniteCell(fire, i, j, distance[i][j], wind_speed, wind_direction)
                         # determine the amount of spread from each neighbor which has ignitied cell i,j
@@ -82,8 +102,8 @@ while t < 4:
     # update the wind speed and direction across all cells based for next time step based on current time step
         # wind speed and direction
     wind_speed, wind_direction = updateWind(wind_speed, wind_direction)
-    showResults(fire, veg)
-    showResults(tempFire, veg)
+    # showResults(fire, veg)
+    # showResults(tempFire, veg)
     fire = copy.deepcopy(tempFire) # update fire matrix 
     fireBorder = copy.deepcopy(tempFireBorder) # update fire border
     # fire_timeline[:][:][count] = tempFire # store fire status into timeline matrix

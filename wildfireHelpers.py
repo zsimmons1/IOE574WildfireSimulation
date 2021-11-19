@@ -310,7 +310,7 @@ def showTimeline(fire_timeline, veg):
 # Simple function to tell whether or not the fire will jump the fire line, can add complexity later
 def jumpFireLine():
     new_number = random.random()
-    if new_number > 0.9:
+    if new_number > 0.93:
         return True
     else:
         return False

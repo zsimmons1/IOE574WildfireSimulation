@@ -64,7 +64,7 @@ for n in range(N):
         tempFireBorder = copy.deepcopy(fireBorder) # 'tempFireBorder' stores the edges of the fire for the current time step.
             # Use of this temp vector ensures that the nested for loops do not reach cells outside of the border
             # for the previous time step's fire (thus preventing spreading too quickly).    
-        # traverse the rectangular border around the fire edge plus one cell on each side
+        
         # Drawing boarder for fire lines at time = 2 hours, this is done as soon as t = 2
         if t == 2:
             # Setting the x,y lower and upper bounds for the fire line boarder
@@ -84,7 +84,7 @@ for n in range(N):
                     veg[x_lower][j] = 4
                     veg[x_upper][j] = 4
             
-
+        # traverse the rectangular border around the fire edge plus one cell on each side
         for i in range(fireBorder[0] - 1, fireBorder[1] + 2): # i is latitutde index
             if i < np.size(fire, 0)-1: # ensures cell is in latitute bounds of map
                 for j in range(fireBorder[2] - 1, fireBorder[3] + 2): # j is longitude index

@@ -135,7 +135,7 @@ def spreadFire(distance, spread_prob):
 
     # Equation 1: Add burn contribution from orthogonal neighbor
     for a in orthogonal:
-        burnArea += 30*distance[a]    
+        burnArea += spread_prob[a]*30*distance[a]    
 
     # Equation 2: Add burn contribution from diagonal neighbor
     for a in diagonal:

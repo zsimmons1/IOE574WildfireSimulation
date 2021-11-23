@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import matplotlib.lines as lines
 from rasterio.plot import show
 from scipy.stats import weibull_min
+from array import array
 import pandas
 import random
 
@@ -140,99 +141,14 @@ def spreadFire(fire, distance, spread_prob):
     for a in diagonal:
         if distance[a] < 15*pow(2, 0.5):
             # Equation 2.1: Add burn contribution from diagonal neighbor when diagonal distance ≤ half
-            burnArea += pow(distance[a], 2)
+            burnArea += spread_prob[a]*pow(distance[a], 2)
         else:
             # Equation 2.2: Add burn contribution from diagonal neighbor when diagonal distance ≥ half 
-            burnArea += 900-pow((30*pow(2, 0.5)-distance[a]), 2)
+            burnArea += spread_prob[a]*(900-pow((30*pow(2, 0.5)-distance[a]), 2))
 
-    # Equation 3: Subtract overlap from opposite orthogonal neighbors (1-6, 3-4)
-    for a, b in [1, 6], [3, 4]:
-        # Equation 3.1: Subtract overlap from opposite orthogonal neighbors when they overlap (1-6, 3-4)
-        if (distance[a] + distance[b]) > 30:
-            burnArea -= 30*(30 - (distance[a]+distance[b]))
-        # Else, Equation 3.0: opposite orthogonal neighbors do not overlap
-
-    # Equation 4: Subtract overlap from kitty-corner orthogonal neighbors (1-3, 1-4, 6-3, 6-4)
-    for a in [1, 6]:
-        for b in [3, 4]:
-            burnArea -= distance[a]*distance[b]
-
-    # Equation 5: Subtract overlap from opposite diagonal neighbors (0-7, 2-5)
-    for a, b in [0, 7], [2, 5]:    
-        if distance[a]+distance[b] > 30*pow(2, 0.5):
-            # Equation 5.1: Subtract overlap from opposite diagonal neighbors when both diagonal distances > half
-            if (distance[a] > 15*pow(2, 0.5)) & (distance[b] > 15*pow(2, 0.5)):
-                burnArea -= -900 + pow((30*pow(2, 0.5)-distance[a]), 2) + pow((30*pow(2, 0.5)-distance[b]), 2)
-            # Equation 5.2: Subtract overlap from opposite diagonal neighbors when only one diagonal distance is > half
-            else:
-                if distance[a] > 15*pow(2, 0.5):
-                    burnArea -= pow(distance[b], 2) - pow((30*pow(2, 0.5)-distance[a]), 2)
-                else: 
-                    burnArea -= pow(distance[a], 2) - pow((30*pow(2, 0.5)-distance[b]), 2) 
-        # Else, Equation 5.0: opposite diagonal neighbors do not overlap 
-        
-    # Equation 6: Subtract overlap from diagonal neighbors in same row or same column (0-2, 0-5, 7-2, 7-5)
-    for a in [0, 7]:
-        for b in [2, 5]:
-            if (pow(2, 0.5)*distance[a] + pow(2, 0.5)*distance[b] > 30) & (distance[a]!= 0) & (distance[b]!= 0):
-                # Equation 6.1: Subtract overlap from diagonal neighbors in same row or same column when both diagonal distances ≤ half
-                if (distance[a] <= 15*pow(2, 0.5)) & (distance[b] <= 15*pow(2, 0.5)):
-                    burnArea -= (pow(30-(pow(2, 0.5)*distance[a] + pow(2, 0.5)*distance[b]), 2) / 4)
-                elif (distance[a] >= 15*pow(2, 0.5)) & (distance[b] >= 15*pow(2, 0.5)):
-                    # Equation 6.2: Subtract overlap from diagonal neighbors in same row or same column when both diagonal distances are > half and there is not complete overlap
-                    if pow(2, 0.5)*(30*pow(2, 0.5) - distance[a]) + pow(2, 0.5)*(30*pow(2, 0.5) - distance[b]) > 30:
-                        burnArea -= 900 - pow((-90-pow(2, 0.5)*(distance[a]+distance[b])), 2)/4
-                    else:
-                    # Equation 6.3: Subtract overlap from diagonal neighbors in same row or same column when both diagonal distances are > half and there is complete overlap
-                        burnArea -= (900 - pow((30*pow(2, 0.5)-distance[a]), 2) - pow((30*pow(2, 0.5)-distance[b]), 2))
-                # Equation 6.4: Subtract overlap from diagonal neighbors in same row or same column when only one diagonal distance is > half and there is not complete overlap
-                elif pow(2, 0.5)*distance[b] + pow(2, 0.5)*(30*pow(2, 0.5) - distance[a]) > 30:  
-                    if distance[a] > 15*pow(2, 0.5):
-                        burnArea -= pow(distance[b], 2) - pow((-30-pow(2, 0.5)*(distance[a]+distance[b])), 2)/4
-                    else:
-                        burnArea -= pow(distance[a], 2) - pow((-30-pow(2, 0.5)*(distance[b]+distance[a])), 2)/4 
-                # Equation 6.5: Subtract overlap from diagonal neighbors in same row or same column when only one diagonal distance is > half and there complete overlap
-                else:
-                    if distance[a] > 15*pow(2, 0.5):
-                        burnArea -= pow(distance[b], 2)
-                    else:
-                        burnArea -= pow(distance[a], 2)
-            # Else: Equation 6.0: Diagonal neighbors in same row or column do not overlap
-
-    # Equation 7: Subtract overlap from adjacent diagonal and orthogonal neighbors (0-1, 0-3, 2-1, 2-4, 5-3, 5-6, 7-4, 7-6)
-    for a, b in [0,1], [0,3], [2,1], [2,4], [5,3], [5,6], [7,4], [7,6]:
-        if (distance[a]!=0) & (distance[b]!=0):
-            # Equation 7.1: Subtract overlap from adjacent orthogonal and diagonal neighbors when orthogonal distance completely overlaps diagonal
-            if (distance[a] <= 15*pow(2, 0.5)) & (distance[b] > pow(2, 0.5)*distance[a]):
-                burnArea -= pow(distance[a], 2)
-            # Equation 7.2: Subtract overlap from adjacent orthogonal and diagonal neighbors when diagonal distance completely overlaps orthogonal    
-            elif pow(2, 0.5)*(30*pow(2, 0.5)-distance[a]) < distance[b]:
-                burnArea -= 30*distance[b]
-            # Equation 7.3: Subtract overlap from adjacent orthogonal and diagonal neighbors when diagonal distance ≤ half and there is not complete overlap   
-            elif (distance[a] <= 15*pow(2, 0.5)) & (distance[b] < pow(2, 0.5)*distance[a]):
-                burnArea -= pow(distance[a], 2) - pow(pow(2, 0.5)*distance[a] - distance[b], 2)/2
-            # Equation 7.4: Subtract overlap from adjacent orthogonal and diagonal neighbors when diagonal distance ≥ half 
-            elif pow(2, 0.5)*(30*pow(2, 0.5)-distance[a]) + distance[b] > 30:   
-                burnArea -= pow(-30 + pow(2, 0.5)*distance[a] + distance[b], 2)/2
-
-    # Equation 8: Subtract overlap from non-adjacent diagonal and orthogonal  neighbors (0-4, 0-6, 2-3, 2-5, 5-1, 5-4, 7-1, 7-3)     
-    for a, b in [0,4], [0,6], [2,3], [2,5], [5,1], [5,4], [7,1], [7,3]:
-        if ((pow(2, 0.5)*distance[a] + distance[b] > 30) & (distance[a]!=0) & (distance[b]!=0)):
-            # Equation 8.1: Subtract overlap from non-adjacent orthogonal and diagonal neighbors when the diagonal distance ≤ half 
-            if((distance[a] <= 15*pow(2, 0.5)) & (pow(2, 0.5)*distance[a] + distance[b] > 30)):
-                burnArea -= pow(30 - pow(2, 0.5)*distance[a] - distance[b], 2)/2
-            # Equation 8.2: Subtract overlap from non-adjacent orthogonal and diagonal neighbors when the diagonal distance ≥ half and does not fill the entire area
-            elif((distance[a] > 15*pow(2, 0.5)) & (pow(2, 0.5)*(30*pow(2, 0.5)-distance[a])+distance[b] < 30)):
-                burnArea -= 30*distance[b]-pow((30*pow(2, 0.5)-distance[a]), 2)+(pow(60-pow(2, 0.5)*distance[a]-distance[b], 2)/2)
-            # Equation 8.3: Subtract overlap from non-adjacent orthogonal and diagonal neighbors when the diagonal distance ≥ half and fills the entire area       
-            elif((distance[a] > 15*pow(2, 0.5)) & (pow(2, 0.5)*(30*pow(2, 0.5)-distance[a])+distance[b] > 30)):
-                burnArea -= 30*distance[b] - pow((30*pow(2, 0.5)-distance[a]), 2)
-        # Else: Equation 8.0: Non-adjacent orthogonal and diagonal neighbors do not overlap
-    
-    # Return burn percentage
-    if (burnArea < 0):
-        print("error! Negative burnArea! Distance: ")
-        print(distance)        
+    # Return burn percentage 
+    if (burnArea > 900): 
+        burnArea = 900       
     return burnArea / 900
 
 

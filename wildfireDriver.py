@@ -5,12 +5,13 @@ import matplotlib.lines as lines
 import numpy as np
 import rasterio
 from rasterio.plot import show
+from array import array
 import math
 from wildfireHelpers import *
 import copy
 
 # Read data and initialize variables
-img = rasterio.open('/Users/Zack/Desktop/IOE574/TermProject/IOE574WildfireSimulation/us_210evc.tif')
+img = rasterio.open('/Users/sprin/OneDrive/Desktop/IOE574/TermProject/IOE574WildfireSimulation/us_210evc.tif')
 # 'map' holds original vegetation raster data from TIFF file
 map = img.read()
 # 'veg' is a 2D matrix containing the cell vegetation type as an integer (0 = unburnable, 1 = trees, 2 = shrub, 3 = herb, 4 = fire boarder)
@@ -83,9 +84,9 @@ while t < 15:
                         # calculate the total percentage on fire for cell i,j based on contributions from
                             # all neighbors (see 'spreadFire' helper function)
                         # spread_prob = [1, 1, 1, 1, 1, 1, 1, 1]    
-                        print("before spreadFire tempFire[",i,"][",j,"]: ", tempFire[i][j])
+                        # print("before spreadFire tempFire[",i,"][",j,"]: ", tempFire[i][j])
                         tempFire[i][j] = spreadFire(fire[i][j], distance[i][j], spread_prob)
-                        print("after spreadFire tempFire[",i,"][",j,"]: ", tempFire[i][j])
+                        # print("after spreadFire tempFire[",i,"][",j,"]: ", tempFire[i][j])
                         # update 'tempFireBorder' to be the fire border of the current time step
                         if tempFire[i][j] > 0:
                             if i < fireBorder[0]: 

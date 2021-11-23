@@ -85,7 +85,7 @@ while t < 15:
                             # all neighbors (see 'spreadFire' helper function)
                         # spread_prob = [1, 1, 1, 1, 1, 1, 1, 1]    
                         # print("before spreadFire tempFire[",i,"][",j,"]: ", tempFire[i][j])
-                        tempFire[i][j] = spreadFire(fire[i][j], distance[i][j], spread_prob)
+                        tempFire[i][j] = spreadFire(distance[i][j], spread_prob)
                         # print("after spreadFire tempFire[",i,"][",j,"]: ", tempFire[i][j])
                         # update 'tempFireBorder' to be the fire border of the current time step
                         if tempFire[i][j] > 0:

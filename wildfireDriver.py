@@ -33,6 +33,7 @@ den = np.mod(map[0], np.ones((np.size(map, 1), np.size(map, 2)), dtype=int)*100)
 
 # Run one replication
 for n in range(N):
+    # Initialize replication-specific variables
     # 'fire' is a 2D matrix containing the percentage on fire of each cell on the map
     fire = np.zeros((np.size(map, 1), np.size(map, 2)), dtype=float)
     # 'distance' is a 3D matrix containing the distance of fire spread for each cell from each neighboring cell
@@ -43,6 +44,7 @@ for n in range(N):
     startj = 24 # 'startj' is the j index (corresponding to longitude) where the fire initiates
     t = 0 # time elapsed, in hours
     del_t = 0.5 # in hours, the time step between updates of the fire status
+    numLinesJumped = 0 # the number of lines jumped in this iteration
 
     # Ignite the fire
     fire[starti][startj] = 1 # Start fire at location 28, 24 with cell 100% on fire
@@ -55,7 +57,7 @@ for n in range(N):
     # Spread fire and build fire lines until fire is 95% contained OR fire spreads beyond map borders(?)
     # TODO: Adjust to incorporate fire lines and 95% containment
     count = -1
-    while t < 15:
+    while t < 1:
         count += 1
         t += del_t # increment time
         tempFire = copy.deepcopy(fire) # 'tempFire' is a temporary fire matrix to store new % of fire info. Use of this temp
@@ -78,11 +80,15 @@ for n in range(N):
                 if canJump == False:
                     veg[i][y_lower] = 4 # Representative of fire boarder
                     veg[i][y_upper] = 4
+                else:
+                    numLinesJumped += 1
             for j in range(y_lower, y_upper+1):
                 canJump = jumpFireLine()
                 if canJump == False:
                     veg[x_lower][j] = 4
                     veg[x_upper][j] = 4
+                else:
+                    numLinesJumped += 1        
             
         # traverse the rectangular border around the fire edge plus one cell on each side
         for i in range(fireBorder[0] - 1, fireBorder[1] + 2): # i is latitutde index
@@ -128,10 +134,19 @@ for n in range(N):
     # show results in map
     showResults(fire, veg)
 
-    # TODO: store simulation results
-    # totBurnArea
-    # burnTime
-    # linesJumped
+    # Store simulation results
+    # Total area burned (m^2) TODO: Fix bug here so this is one number!
+    totBurnArea.append(sum(fire) * 900)
+    print(totBurnArea)
+
+    # Total burn time 
+    burnTime.append(t)
+    print(t)
+
+    # Number of fire lines jumped
+    linesJumped.apped(numLinesJumped)
+    print(numLinesJumped)
+    
 
 # Finish
 print("done")    

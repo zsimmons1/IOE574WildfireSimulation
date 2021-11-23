@@ -128,7 +128,7 @@ def advanceBurn(veg, cell_transition, distance, del_t):
         # following order: NW, N, NE, W, E, SW, S, SE
     # 'spread_prob' is an 8-element vector of the spread probability from each neighbor to cell i,j with 
         # neighbor order same as distance vector
-def spreadFire(fire, distance, spread_prob):
+def spreadFire(distance, spread_prob):
     orthogonal = [1, 3, 4, 6]
     diagonal = [0, 2, 5, 7]
     burnArea = 0

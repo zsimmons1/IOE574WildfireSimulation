@@ -28,7 +28,7 @@ map = img.read()
 # 'veg' is a 2D matrix containing the cell vegetation type as an integer (0 = unburnable, 1 = trees, 2 = shrub, 3 = herb, 4 = fire boarder)
 veg = np.floor_divide(map[0], np.ones([np.size(map, 1), np.size(map, 2)], dtype=int)*100)
 # 'den' holds the densitity of the vegetation type as a number between 0 and 100
-# TODO: den is currently unused
+# TODO: 'den' is currently unused
 den = np.mod(map[0], np.ones((np.size(map, 1), np.size(map, 2)), dtype=int)*100)
 
 # Run one replication
@@ -36,6 +36,10 @@ for n in range(N):
     # Initialize replication-specific variables
     # 'fire' is a 2D matrix containing the percentage on fire of each cell on the map
     fire = np.zeros((np.size(map, 1), np.size(map, 2)), dtype=float)
+    # igniteTime is a 2D matrix containing the time (in hours) during which each cell ignites
+    igniteTime = np.zeros((np.size(map, 1), np.size(map, 2)), dtype=float)
+    # fullBurnTime is a 2D matrix containing the time (in hours) during which the cell reaches 100% on fire
+    fullburnTime = np.zeros((np.size(map, 1), np.size(map, 2)), dtype=float)
     # 'distance' is a 3D matrix containing the distance of fire spread for each cell from each neighboring cell
     distance = np.zeros((np.size(map, 1), np.size(map, 2), 8), dtype=float)
     # 'fire_timeline' is a 3D matrix containing the burn state of each cell at each time step in the simulation
@@ -55,11 +59,13 @@ for n in range(N):
     wind_direction = 0 # TODO: Sample wind_direction from data too?
 
     # Spread fire and build fire lines until fire is 95% contained OR fire spreads beyond map borders(?)
-    # TODO: Adjust to incorporate fire lines and 95% containment
-    count = -1
-    while t < 1:
-        count += 1
+    count = -1 # 'count' tracks the number of time steps though the while loop
+    newCellSpread = 99 # Initially set 'newCellSpread' high so that we initiate while loop
+    borderReached = False # Initialize that the fire has not spread to the borders of the map
+    while (newCellSpread > 0) & (borderReached == False):
+        count += 1 # increment the count
         t += del_t # increment time
+        newCellSpread = 0 # reset 'newCellSpread' to zero so it can be incremented as fire spreads 
         tempFire = copy.deepcopy(fire) # 'tempFire' is a temporary fire matrix to store new % of fire info. Use of this temp
             # matrix ensures that all fire spread depends on the state of spread in the previous time step, 
             # not the current time step (thus preventing spreading too quickly).
@@ -98,6 +104,9 @@ for n in range(N):
                         if (veg[i][j]!=0) and (fire[i][j]!=1 and veg[i][j]!=4): # skip all unburnable cells or all completely on fire cells                        
                             # determine which neighbors to spread fire from (see 'ignite' helper function)  
                             cell_transition, spread_prob  = igniteCell(fire, i, j, distance[i][j], wind_speed, wind_direction)
+                            # determine if cell i,j is newly ignited and increment 'newCellSpread' if so
+                            if (fire[i][j] > 0) & np.sum(cell_transition) > 0:
+                                newCellSpread += 1
                             # determine the amount of spread from each neighbor which has ignitied cell i,j
                                 # (see 'advanceBurn' helper function)
                             distance[i][j] = advanceBurn(veg[i][j], cell_transition, distance[i][j], del_t)
@@ -117,26 +126,22 @@ for n in range(N):
                                     tempFireBorder[2] = j
                                 elif j > fireBorder[3]: 
                                     tempFireBorder[3] = j 
-                            if count > 0:
-                                if ((fire_timeline[i][j][count-1] > 0) & (tempFire[i][j]==0)):   
-                                    print("ERROR! Reseting to zero")                
-        # update the wind speed and direction across all cells based for next time step based on current time step
-            # wind speed and direction
-        wind_speed, wind_direction = updateWind(wind_speed, wind_direction)
-        # showResults(fire, veg)
-        # showResults(tempFire, veg)
+                        else:
+                            borderReached = True
+            else:
+                borderReached = True
+
         fire = copy.deepcopy(tempFire) # update fire matrix 
+        fire_timeline = np.insert(fire_timeline, count, tempFire, axis=2) # store fire status into timeline matrix
         fireBorder = copy.deepcopy(tempFireBorder) # update fire border
-        # fire_timeline[:][:][count] = tempFire # store fire status into timeline matrix
-        fire_timeline = np.insert(fire_timeline, count, tempFire, axis=2)
-        # showResults(fire, veg)
+        wind_speed, wind_direction = updateWind(wind_speed, wind_direction) # update the wind speed and direction across all cells based for next time step based on current time step
 
     # show results in map
     showResults(fire, veg)
 
     # Store simulation results
-    # Total area burned (m^2) TODO: Fix bug here so this is one number!
-    totBurnArea.append(sum(fire) * 900)
+    # Total area burned (m^2)
+    totBurnArea.append(np.sum(fire) * 900)
     print(totBurnArea)
 
     # Total burn time 
@@ -144,7 +149,7 @@ for n in range(N):
     print(t)
 
     # Number of fire lines jumped
-    linesJumped.apped(numLinesJumped)
+    linesJumped.append(numLinesJumped)
     print(numLinesJumped)
     
 

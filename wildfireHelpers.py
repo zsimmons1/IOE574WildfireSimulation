@@ -244,6 +244,54 @@ def jumpFireLine(jump_prob):
     else:
         return False
 
+# buildResponseLine:
+    # i is the latitude index of the cell where the fire line was breached/jumped
+    # j is the longitude index of the cell where the fire line was breached/jumped
+    # response_radius is the radius of the squre of the reponse line
+    # contingency_border is a vector of [x_lower, x_upper, y_lower, y_upper] of the fire line that was breached
+    # jump_prob is the probability that any fire will jump a fire line
+def buildResponseLine(i,j, veg, response_radius, contingency_border, jump_prob, numLinesJumped):
+        # Setting the x,y lower and upper bounds for the fire line boarder
+        if i - response_radius < 0:
+            x_lower = 0
+        else:
+            x_lower = i - response_radius
+
+        if i + response_radius > np.size(veg, 0)-1:
+            x_upper = 0
+        else:
+            x_upper = i + response_radius 
+
+        if j - response_radius < 0:
+            y_lower = 0
+        else:
+            y_lower = j - response_radius         
+        
+        if j + response_radius > np.size(veg, 1)-1:
+            y_upper = 0
+        else:
+            y_upper = j + response_radius
+
+        # Setting the vegitation type to 4 for the fire lines
+        for i in range(x_lower, x_upper+1):
+                # (i < contingency_border[2] or i > contingency_border[3]) 
+            if (i < np.size(veg, 0)-1) and (i > 0):
+                canJump = jumpFireLine(jump_prob)
+                if canJump == False:
+                    veg[i][y_lower] = 4 # Representative of fire boarder
+                    veg[i][y_upper] = 4
+                else:
+                    numLinesJumped += 1
+        for j in range(y_lower, y_upper+1):
+            # (j < contingency_border[0] or i > contingency_border[1])
+            if (j < np.size(veg, 1)-1) and (j > 0):
+                canJump = jumpFireLine(jump_prob)
+                if canJump == False:
+                    veg[x_lower][j] = 4 # Representative of fire boarder
+                    veg[x_upper][j] = 4
+                else:
+                    numLinesJumped += 1      
+
 
 # midPointCircleDraw: 
 # Source: https://www.geeksforgeeks.org/mid-point-circle-drawing-algorithm/

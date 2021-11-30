@@ -49,7 +49,9 @@ for n in range(N):
     t = 0 # time elapsed, in hours
     del_t = 0.5 # in hours, the time step between updates of the fire status
     numLinesJumped = 0 # the number of lines jumped in this iteration
-    jump_prob = 0.05 # the probability that the fire jumps any given fire line
+    jump_prob = 0.02 # the probability that the fire jumps any given fire line
+    response_radius = 10
+    response_time = 2 # the number of hours before initial contingency lines are built
 
     # Ignite the fire
     fire[starti][startj] = 1 # Start fire at location 28, 24 with cell 100% on fire
@@ -75,12 +77,13 @@ for n in range(N):
             # for the previous time step's fire (thus preventing spreading too quickly).    
         
         # Drawing boarder for fire lines at time = 2 hours, this is done as soon as t = 2
-        if t == 2:
+        if t == response_time:
             # Setting the x,y lower and upper bounds for the fire line boarder
             x_lower = tempFireBorder[0] - 5
             x_upper = tempFireBorder[1] + 5
             y_lower = tempFireBorder[2] - 5
             y_upper = tempFireBorder[3] + 5
+            contingency_border = [x_lower, x_upper, y_lower, y_upper]
             # Setting the vegitation type to 4 for the fire lines
             for i in range(x_lower, x_upper+1):
                 canJump = jumpFireLine(jump_prob)
@@ -108,15 +111,17 @@ for n in range(N):
                             # determine if cell i,j is newly ignited and increment 'newCellSpread' if so
                             if (fire[i][j] == 0) and (np.sum(cell_transition) > 0):
                                 newCellSpread += 1
+                                # check if this is a fire line breach if we've built a fire line yet
+                                if t >= response_time:
+                                    if i == contingency_border[0] or i == contingency_border[1] or j == contingency_border[2] or j == contingency_border[3]:
+                                        # if so, build a response line!
+                                        buildResponseLine(i,j, veg, response_radius, contingency_border, 0, numLinesJumped)
                             # determine the amount of spread from each neighbor which has ignitied cell i,j
                                 # (see 'advanceBurn' helper function)
                             distance[i][j] = advanceBurn(veg[i][j], cell_transition, distance[i][j], del_t)
                             # calculate the total percentage on fire for cell i,j based on contributions from
                                 # all neighbors (see 'spreadFire' helper function)
-                            # spread_prob = [1, 1, 1, 1, 1, 1, 1, 1]    
-                            # print("before spreadFire tempFire[",i,"][",j,"]: ", tempFire[i][j])
                             tempFire[i][j] = spreadFire(distance[i][j], spread_prob)
-                            # print("after spreadFire tempFire[",i,"][",j,"]: ", tempFire[i][j])
                             # update 'tempFireBorder' to be the fire border of the current time step
                             if tempFire[i][j] > 0:
                                 if i < fireBorder[0]: 

@@ -105,16 +105,29 @@ def igniteCell(fire, i, j, distance, wind_speed, wind_direction):
 def advanceBurn(veg, cell_transition, distance, del_t):
     # shape stores the Weibull distribution shape for each vegetation type
     shape = [11.4, 13.6, 13.0, 0]        
-
-    for x in range(len(distance)):
+    orthogonal = [1, 3, 4, 6]
+    diagonal = [0, 2, 5, 7]
+    for x in orthogonal:
         # If this neighbor is contributing, then we will calculate the distance
-        # TODO: adjust so that diagonal neighbors can have distances up to 30*pow(2, 0.5)
+        # diagonal neighbors can have spread distance up to 30 m
         if shape[veg-1] == 0:
             distance[x] = 0
         if cell_transition[x] == 1 and shape[veg-1] != 0:
             del_x = math.pow(10, np.random.weibull(shape[veg-1]))*del_t
             if distance[x] + del_x > 30:
                 distance[x] = 30
+            else: 
+                distance[x] += del_x
+
+    for x in diagonal:
+        # If this neighbor is contributing, then we will calculate the distance
+        if shape[veg-1] == 0:
+            distance[x] = 0
+        if cell_transition[x] == 1 and shape[veg-1] != 0:
+            del_x = math.pow(10, np.random.weibull(shape[veg-1]))*del_t
+            # diagonal neighbors can have spread distance up to 30*square root of 2 m
+            if distance[x] + del_x > 30*pow(2, 0.5):
+                distance[x] = 30*pow(2, 0.5)
             else: 
                 distance[x] += del_x
     
@@ -224,9 +237,9 @@ def showTimeline(fire_timeline, veg):
     return 0
 
 # Simple function to tell whether or not the fire will jump the fire line, can add complexity later
-def jumpFireLine():
+def jumpFireLine(jump_prob):
     new_number = random.random()
-    if new_number > 0.93:
+    if new_number > (1-jump_prob):
         return True
     else:
         return False

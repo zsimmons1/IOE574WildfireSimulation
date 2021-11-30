@@ -49,6 +49,7 @@ for n in range(N):
     t = 0 # time elapsed, in hours
     del_t = 0.5 # in hours, the time step between updates of the fire status
     numLinesJumped = 0 # the number of lines jumped in this iteration
+    jump_prob = 0.05 # the probability that the fire jumps any given fire line
 
     # Ignite the fire
     fire[starti][startj] = 1 # Start fire at location 28, 24 with cell 100% on fire
@@ -60,7 +61,7 @@ for n in range(N):
 
     # Spread fire and build fire lines until fire is 95% contained OR fire spreads beyond map borders(?)
     count = -1 # 'count' tracks the number of time steps though the while loop
-    newCellSpread = 99 # Initially set 'newCellSpread' high so that we initiate while loop
+    newCellSpread = 999999 # Initially set 'newCellSpread' high so that we initiate while loop
     borderReached = False # Initialize that the fire has not spread to the borders of the map
     while (newCellSpread > 0) & (borderReached == False):
         count += 1 # increment the count
@@ -82,14 +83,14 @@ for n in range(N):
             y_upper = tempFireBorder[3] + 5
             # Setting the vegitation type to 4 for the fire lines
             for i in range(x_lower, x_upper+1):
-                canJump = jumpFireLine()
+                canJump = jumpFireLine(jump_prob)
                 if canJump == False:
                     veg[i][y_lower] = 4 # Representative of fire boarder
                     veg[i][y_upper] = 4
                 else:
                     numLinesJumped += 1
             for j in range(y_lower, y_upper+1):
-                canJump = jumpFireLine()
+                canJump = jumpFireLine(jump_prob)
                 if canJump == False:
                     veg[x_lower][j] = 4
                     veg[x_upper][j] = 4
@@ -105,7 +106,7 @@ for n in range(N):
                             # determine which neighbors to spread fire from (see 'ignite' helper function)  
                             cell_transition, spread_prob  = igniteCell(fire, i, j, distance[i][j], wind_speed, wind_direction)
                             # determine if cell i,j is newly ignited and increment 'newCellSpread' if so
-                            if (fire[i][j] > 0) & np.sum(cell_transition) > 0:
+                            if (fire[i][j] == 0) and (np.sum(cell_transition) > 0):
                                 newCellSpread += 1
                             # determine the amount of spread from each neighbor which has ignitied cell i,j
                                 # (see 'advanceBurn' helper function)
@@ -126,8 +127,8 @@ for n in range(N):
                                     tempFireBorder[2] = j
                                 elif j > fireBorder[3]: 
                                     tempFireBorder[3] = j 
-                        else:
-                            borderReached = True
+                    else:
+                        borderReached = True
             else:
                 borderReached = True
 

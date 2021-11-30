@@ -49,8 +49,8 @@ for n in range(N):
     t = 0 # time elapsed, in hours
     del_t = 0.5 # in hours, the time step between updates of the fire status
     numLinesJumped = 0 # the number of lines jumped in this iteration
-    jump_prob = 0.02 # the probability that the fire jumps any given fire line
-    response_radius = 10
+    jump_prob = 0.05 # the probability that the fire jumps any given fire line
+    response_radius = 4
     response_time = 2 # the number of hours before initial contingency lines are built
 
     # Ignite the fire

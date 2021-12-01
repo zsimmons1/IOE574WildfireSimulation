@@ -250,7 +250,7 @@ def jumpFireLine(jump_prob):
     # response_radius is the radius of the squre of the reponse line
     # contingency_border is a vector of [x_lower, x_upper, y_lower, y_upper] of the fire line that was breached
     # jump_prob is the probability that any fire will jump a fire line
-def buildResponseLine(i,j, veg, response_radius, contingency_border, jump_prob, numLinesJumped):
+def buildResponseLine(i,j, contained, veg, response_radius, contingency_border, jump_prob, numLinesJumped):
         # Setting the x,y lower and upper bounds for the fire line boarder
         if i - response_radius < 0:
             x_lower = 0
@@ -274,24 +274,43 @@ def buildResponseLine(i,j, veg, response_radius, contingency_border, jump_prob, 
 
         # Setting the vegitation type to 4 for the fire lines
         for i in range(x_lower, x_upper+1):
-                # (i < contingency_border[2] or i > contingency_border[3]) 
-            if (i < np.size(veg, 0)-1) and (i > 0):
+            if contained[i][y_lower] == 0: # if the potential left fire line is not already contained
                 canJump = jumpFireLine(jump_prob)
                 if canJump == False:
+                    # print("y_lower")
                     veg[i][y_lower] = 4 # Representative of fire boarder
-                    veg[i][y_upper] = 4
+                else:
+                    print("Error: y_lower jumped")
+                    numLinesJumped += 1    
+            if contained[i][y_upper] == 0:   
+                canJump = jumpFireLine(jump_prob) # if the potential right fire line is not already contained
+                if canJump == False:
+                    # print("y_upper") 
+                    veg[i][y_upper] = 4 # Representative of fire border
                 else:
                     numLinesJumped += 1
         for j in range(y_lower, y_upper+1):
-            # (j < contingency_border[0] or i > contingency_border[1])
-            if (j < np.size(veg, 1)-1) and (j > 0):
+            if contained[x_lower][j] == 0:
                 canJump = jumpFireLine(jump_prob)
                 if canJump == False:
+                    # print("x_lower")
                     veg[x_lower][j] = 4 # Representative of fire boarder
-                    veg[x_upper][j] = 4
                 else:
-                    numLinesJumped += 1      
+                    numLinesJumped += 1    
+            if contained[x_upper][j] == 0:    
+                canJump = jumpFireLine(jump_prob)
+                if canJump == False:
+                    # print("x_upper")
+                    veg[x_upper][j] = 4 # Representative of fire boarder
+                else:
+                    numLinesJumped += 1  
 
+        # create the contained zone
+        for i in range(x_lower, x_upper+1):
+            for j in range(y_lower, y_upper+1):
+                if i >= x_lower and i <= x_upper and j >= y_lower and j <= y_upper:
+                    contained[i][j] = 1              
+                        
 
 # midPointCircleDraw: 
 # Source: https://www.geeksforgeeks.org/mid-point-circle-drawing-algorithm/

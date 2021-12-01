@@ -36,6 +36,9 @@ for n in range(N):
     # Initialize replication-specific variables
     # 'fire' is a 2D matrix containing the percentage on fire of each cell on the map
     fire = np.zeros((np.size(map, 1), np.size(map, 2)), dtype=float)
+    # contained is a 2D matrix containing the status of the cell's containment 
+    #   (1 if is is within a fire-line, 0 otherwise)
+    contained = np.zeros((np.size(map, 1), np.size(map, 2)), dtype=float)
     # igniteTime is a 2D matrix containing the time (in hours) during which each cell ignites
     igniteTime = np.zeros((np.size(map, 1), np.size(map, 2)), dtype=float)
     # fullBurnTime is a 2D matrix containing the time (in hours) during which the cell reaches 100% on fire
@@ -49,7 +52,7 @@ for n in range(N):
     t = 0 # time elapsed, in hours
     del_t = 0.5 # in hours, the time step between updates of the fire status
     numLinesJumped = 0 # the number of lines jumped in this iteration
-    jump_prob = 0.05 # the probability that the fire jumps any given fire line
+    jump_prob = 0.10 # the probability that the fire jumps any given fire line
     response_radius = 4
     response_time = 2 # the number of hours before initial contingency lines are built
 
@@ -88,18 +91,41 @@ for n in range(N):
             for i in range(x_lower, x_upper+1):
                 canJump = jumpFireLine(jump_prob)
                 if canJump == False:
+                    contained[i][y_lower] = 1
                     veg[i][y_lower] = 4 # Representative of fire boarder
-                    veg[i][y_upper] = 4
                 else:
+                    contained[i][y_lower] = -1
                     numLinesJumped += 1
+                canJump = jumpFireLine(jump_prob)    
+                if canJump == False:
+                    contained[i][y_upper] = 1
+                    veg[i][y_upper] = 4    
+                else:
+                    contained[i][y_upper] = -1
+                    numLinesJumped += 1    
             for j in range(y_lower, y_upper+1):
                 canJump = jumpFireLine(jump_prob)
                 if canJump == False:
+                    contained[x_lower][j] = 1
                     veg[x_lower][j] = 4
+                else:
+                    contained[x_lower][j] = -1
+                    numLinesJumped += 1
+                canJump = jumpFireLine(jump_prob)      
+                if canJump == False:
+                    contained[x_upper][j] = 1
                     veg[x_upper][j] = 4
                 else:
+                    contained[x_upper][j] = -1
                     numLinesJumped += 1        
-            
+
+            # create the contained zone
+            for i in range(np.size(fire, 0)):
+                for j in range(np.size(fire, 1)):
+                    if i > x_lower and i < x_upper and j > y_lower and j < y_upper:
+                        contained[i][j] = 1            
+            show(contained, cmap='Blues')
+
         # traverse the rectangular border around the fire edge plus one cell on each side
         for i in range(fireBorder[0] - 1, fireBorder[1] + 2): # i is latitutde index
             if i < np.size(fire, 0)-1: # ensures cell is in latitute bounds of map
@@ -112,10 +138,12 @@ for n in range(N):
                             if (fire[i][j] == 0) and (np.sum(cell_transition) > 0):
                                 newCellSpread += 1
                                 # check if this is a fire line breach if we've built a fire line yet
-                                if t >= response_time:
-                                    if i == contingency_border[0] or i == contingency_border[1] or j == contingency_border[2] or j == contingency_border[3]:
-                                        # if so, build a response line!
-                                        buildResponseLine(i,j, veg, response_radius, contingency_border, 0, numLinesJumped)
+                                if contained[i][j] == -1:
+                                    # if so, build a response line!
+                                    buildResponseLine(i,j, contained, veg, response_radius, contingency_border, 0, numLinesJumped)
+                                    # showResults(fire, veg)
+                                    # show(contained, cmap='Blues')
+
                             # determine the amount of spread from each neighbor which has ignitied cell i,j
                                 # (see 'advanceBurn' helper function)
                             distance[i][j] = advanceBurn(veg[i][j], cell_transition, distance[i][j], del_t)
@@ -144,6 +172,7 @@ for n in range(N):
 
     # show results in map
     showResults(fire, veg)
+    show(contained, cmap='Blues')
 
     # Store simulation results
     # Total area burned (m^2)

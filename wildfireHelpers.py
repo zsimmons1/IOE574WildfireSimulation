@@ -57,7 +57,6 @@ def igniteCell(fire, i, j, distance, wind_speed, wind_direction):
     spread_prob = [fire[i-1][j-1], fire[i-1][j], fire[i-1][j+1],
                    fire[i][j-1], fire[i][j+1],
                    fire[i+1][j-1], fire[i+1][j], fire[i+1][j+1]]        
-
     # Determine which neighbor cells contribute to the fire in cell i,j
     for k in range(len(distance)):
         # If there is a spread distance from neighbor k, then neighbor k ignited cell i,j in a previous time step
@@ -71,26 +70,21 @@ def igniteCell(fire, i, j, distance, wind_speed, wind_direction):
                 angle -= 360
             elif angle < -180:
                 angle += 360
-
             # TODO: Create function(s) to determine alpha_w
             # set function based on wind speed
             # input angle into funciton to get alpha_w facor
             alpha_w = 1
             spread_prob[k] = spread_prob[k]*alpha_w
-            
             # Ensure all probabilities are no more than 1
             if spread_prob[k] > 1:
                 spread_prob[k] = 1
-
             # Draw from uniform distribution to determine if neighbor k will spread to cell i,j  
             u = np.random.uniform(0,1)   
             if u < spread_prob[k]:
                 cell_transition[k] = 1          
             # Else, neighbor k does not contribute to the fire in cell i,j, so 'cell_transition[k]' remains 0
-
     # Return the cell_transition and spread_prob
     return cell_transition, spread_prob
-
 
 # advanceBurn: Determine the distance of spread of the fire from each contributing neighbor to cell i,j. These
 # distances are determined from the previous distance and velocity of fire spread sampled from a Weibull distribution
@@ -118,7 +112,6 @@ def advanceBurn(veg, cell_transition, distance, del_t):
                 distance[x] = 30
             else: 
                 distance[x] += del_x
-
     for x in diagonal:
         # If this neighbor is contributing, then we will calculate the distance
         if shape[veg-1] == 0:
@@ -130,9 +123,7 @@ def advanceBurn(veg, cell_transition, distance, del_t):
                 distance[x] = 30*pow(2, 0.5)
             else: 
                 distance[x] += del_x
-    
     return distance
-
 
 # spreadFire: Calculates the area of burn in cell i,j resulting from the spread distance in each direction and the 
 # intensity of spread in each direction. Area of spread is then used to calculate total proportion of 
@@ -142,28 +133,110 @@ def advanceBurn(veg, cell_transition, distance, del_t):
     # 'spread_prob' is an 8-element vector of the spread probability from each neighbor to cell i,j with 
         # neighbor order same as distance vector
 def spreadFire(distance, spread_prob):
-    orthogonal = [1, 3, 4, 6]
-    diagonal = [0, 2, 5, 7]
-    burnArea = 0
-
-    # Equation 1: Add burn contribution from orthogonal neighbor
+    orthogonal = [1, 3, 4, 6] # set the indices for orthogonal neighbors (N, W, E, S)
+    diagonal = [0, 2, 5, 7] # set the indices for diagonal neighbors (NW, NE, SW, SE)
+    burnArea = 0 # initialize the burn area to be 0
+    # Add burn contribution from orthogonal neighbors
     for a in orthogonal:
         burnArea += spread_prob[a]*30*distance[a]    
-
-    # Equation 2: Add burn contribution from diagonal neighbor
+    # Add burn contribution from diagonal neighbors
     for a in diagonal:
         if distance[a] < 15*pow(2, 0.5):
-            # Equation 2.1: Add burn contribution from diagonal neighbor when diagonal distance ≤ half
+            # Add burn contribution from diagonal neighbor when diagonal distance ≤ half
             burnArea += spread_prob[a]*pow(distance[a], 2)
         else:
-            # Equation 2.2: Add burn contribution from diagonal neighbor when diagonal distance ≥ half 
+            # Add burn contribution from diagonal neighbor when diagonal distance ≥ half 
             burnArea += spread_prob[a]*(900-pow((30*pow(2, 0.5)-distance[a]), 2))
-
-    # Return burn percentage 
+    # Return the burn percentage 
     if (burnArea > 900): 
         burnArea = 900       
     return burnArea / 900
 
+# breachFireLine: Determines whether any given fire line will be breached based on a uniform random probability
+    # 'breachProb' is the probability that a fire line will be breached (independent of any characteristics of
+        # the fire)
+def breachFireLine(breachProb):
+    new_number = random.random()
+    if new_number > (1-breachProb):
+        return True
+    else:
+        return False
+
+# rectangleLine: Constructs a rectangular fire line in accordance with upper and lower bounds for rows and columns
+    # 'veg' is a 2D matrix containing the cell vegetation type as an integer (4 indicates an unbreached fire border)
+    # 'fireLineBounds' is a vector of [rL, rU, cL, cU] of the rectangle fire line to be built
+    # 'contained' is a 2D matrix containing the status of the cell's containment 
+    #   (1 if is is within a fire-line, 0 otherwise)
+    # 'breachProb' is the probability that the fire jumps any given fire line
+def rectangleLine(veg, fireLineBounds, contained, breachProb):
+    # Unpack fire line bounds
+    rL = fireLineBounds[0] # row lower bound (northmost)
+    rU = fireLineBounds[1] # row upper bound (southmost)
+    cL = fireLineBounds[2] # column lower bound (westmost)
+    cU = fireLineBounds[3] # column upper bound (eastmost)
+    # Set the vegitation type to 4 for the fire lines
+    for i in range(rL, rU+1): # Build vertical fire lines
+        if contained[i][cL] == 0: # if the potential West fire line is not already contained
+            if breachFireLine(breachProb) == False: veg[i][cL] = 4 
+            else: contained[i][cL] = -1
+        if contained[i][cU] == 0: # if the potential East fire line is not already contained 
+            if breachFireLine(breachProb) == False: veg[i][cU] = 4 
+            else: contained[i][cU] = -1
+    for j in range(cL, cU+1): # Build horizontal fire lines
+        if contained[rL][j] == 0: # if the potential North fire line is not already contained
+            if breachFireLine(breachProb) == False: veg[rL][j] = 4 
+            else: contained[rL][j] = -1
+        if contained[rU][j] == 0: # if the potential South fire line is not already contained   
+            if breachFireLine(breachProb) == False: veg[rU][j] = 4 
+            else: contained[rU][j] = -1
+    # Create the contained zone from the new fire line
+    for i in range(rL-1, rU):
+        for j in range(cL-1, cU):
+            contained[i][j] = 1      
+    return 0  
+
+# buildPrimaryLines:
+    # 'i' is the latitude index of the cell where the fire line was breached
+    # 'j' is the longitude index of the cell where the fire line was breached
+    # 'contained' is a 2D matrix containing the status of the cell's containment 
+    # 'veg' is a 2D matrix containing the cell vegetation type as an integer (4 indicates an unbreached fire border)
+    # 'fireBuffer' is the number of cells between the active fire border and location of primary fire line
+    # 'breachProb' is the probability that any fire will jump a fire line
+    # 'tempFireBorder' is the current position of the active fire border in each direction
+def buildPrimaryLines(i, j, contained, veg, primaryBuffer, breachProb, tempFireBorder):
+    # Setting the x,y lower and upper bounds for the fire line boarder
+    rL = tempFireBorder[0] - primaryBuffer # row lower bound (northmost)
+    rU = tempFireBorder[1] + primaryBuffer # row upper bound (southmost)
+    cL = tempFireBorder[2] - primaryBuffer # column lower bound (westmost)
+    cU = tempFireBorder[3] + primaryBuffer # column upper bound (eastmost)
+    # call the rectangleLine function to build the primary fire line  
+    rectangleLine(veg, [rL, rU, cL, cU], contained, breachProb) 
+    return 0      
+
+# buildResponseLine:
+    # 'i' is the latitude index of the cell where the fire line was breached
+    # 'j' is the longitude index of the cell where the fire line was breached
+    # 'contained' is a 2D matrix containing the status of the cell's containment 
+    # 'veg' is a 2D matrix containing the cell vegetation type as an integer (4 indicates an unbreached fire border)
+    # 'responseRadius' is the radius of the squre of the reponse line
+    # 'breachProb' is the probability that any fire will jump a fire line
+def buildResponseLine(i, j, contained, veg, responseRadius, breachProb):
+        # Setting the x,y lower and upper bounds for the fire line boarder to ensure they do not exceed the 
+            # bounds of the map
+        # left fire line boundary
+        if i - responseRadius < 0: rL = 0
+        else: rL = i - responseRadius
+        # right fire line boundary
+        if i + responseRadius > np.size(veg, 0)-1: rU = 0
+        else: rU = i + responseRadius 
+        # lower fire line boundary
+        if j - responseRadius < 0: cL = 0
+        else: cL = j - responseRadius         
+        # upper fire line boundary
+        if j + responseRadius > np.size(veg, 1)-1: cU = 0
+        else: cU = j + responseRadius      
+        # call the rectangleLine function to build the response fire line    
+        rectangleLine(veg, [rL, rU, cL, cU], contained, breachProb)  
 
 # showResults: Plots the map of the area pre-burn and post-burn
     # 'fire' is a 2D matrix containing the percentage on fire of each cell on the map
@@ -175,20 +248,17 @@ def showResults(fire, veg):
     g = np.add(np.add(np.where(veg == 1, 118, 0), np.where(veg == 2, 196, 0)), np.where(veg == 3, 235, 0))
     b = np.add(np.add(np.where(veg == 1, 29, 0), np.where(veg == 2, 125, 0)), np.where(veg == 3, 118, 0))
     rgbIMG = np.dstack((r, g, b))
-    
     # Overlay burn
     new_r = np.where(fire > 0, 255, r)
     new_g = np.where(fire > 0, 0, g)
     new_b = np.where(fire > 0, 0, b)
     newRGB = np.dstack((new_r, new_g, new_b))
-
     # Create custom legends
     ax2legendElements = [lines.Line2D([0], [0], marker='o', color='w', label='Fire', markerfacecolor='#ff0000', markersize=10),
                         lines.Line2D([0], [0], marker='o', color='w', label='Tree', markerfacecolor='#38761d', markersize=10), 
                         lines.Line2D([0], [0], marker='o', color='w', label='Shrub', markerfacecolor='#93c47d', markersize=10), 
                         lines.Line2D([0], [0], marker='o', color='w', label='Herb', markerfacecolor='#dbeb76', markersize=10),
                         lines.Line2D([0], [0], marker='o', color='w', label='Fire Line', markerfacecolor='#333000', markersize=10)]
-
     # Plot figures
     fig, ((ax1, ax2)) = plt.subplots(1, 2)
     ax1.imshow(rgbIMG)
@@ -196,9 +266,9 @@ def showResults(fire, veg):
     ax2.legend(handles = ax2legendElements, bbox_to_anchor=(1.5, 1.0), loc='upper right')
     plt.show()
     show(fire, cmap='Reds')
-
     return 0
 
+# TODO: debug, re-write, or discard
 # showTimeline:
 def showTimeline(fire_timeline, veg):
     # Build pre-burn landscape image
@@ -207,23 +277,19 @@ def showTimeline(fire_timeline, veg):
     g = np.add(np.add(np.where(veg == 1, 118, 0), np.where(veg == 2, 196, 0)), np.where(veg == 3, 235, 0))
     b = np.add(np.add(np.where(veg == 1, 29, 0), np.where(veg == 2, 125, 0)), np.where(veg == 3, 118, 0))
     rgbIMG = np.dstack((r, g, b))
-
     fires = np.zeros((20, np.size(fire_timeline, 0), np.size(fire_timeline, 1)), dtype=int)
-    
     for i in range(20):
         # Overlay burn
         new_r = np.where(fire_timeline[i] > 0, 255, r)
         new_g = np.where(fire_timeline[i] > 0, 0, g)
         new_b = np.where(fire_timeline[i] > 0, 0, b)
         fires[i] = np.dstack((new_r, new_g, new_b))
-
         # Create custom legends
         ax2legendElements = [lines.Line2D([0], [0], marker='o', color='w', label='Fire', markerfacecolor='#ff0000', markersize=10),
                             lines.Line2D([0], [0], marker='o', color='w', label='Tree', markerfacecolor='#38761d', markersize=10), 
                             lines.Line2D([0], [0], marker='o', color='w', label='Shrub', markerfacecolor='#93c47d', markersize=10), 
                             lines.Line2D([0], [0], marker='o', color='w', label='Herb', markerfacecolor='#dbeb76', markersize=10),
                             lines.Line2D([0], [0], marker='o', color='w', label='Fire Line', markerfacecolor='#333000', markersize=10)]
-
     # Plot figures
     fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
     ax1.imshow(rgbIMG)
@@ -233,79 +299,7 @@ def showTimeline(fire_timeline, veg):
     ax2.legend(handles = ax2legendElements, bbox_to_anchor=(1.5, 1.0), loc='upper right')
     plt.show()
     show(fire, cmap='Reds')
-
     return 0
-
-# Simple function to tell whether or not the fire will jump the fire line, can add complexity later
-def jumpFireLine(jump_prob):
-    new_number = random.random()
-    if new_number > (1-jump_prob):
-        return True
-    else:
-        return False
-
-# buildResponseLine:
-    # i is the latitude index of the cell where the fire line was breached/jumped
-    # j is the longitude index of the cell where the fire line was breached/jumped
-    # response_radius is the radius of the squre of the reponse line
-    # contingency_border is a vector of [x_lower, x_upper, y_lower, y_upper] of the fire line that was breached
-    # jump_prob is the probability that any fire will jump a fire line
-def buildResponseLine(i,j, contained, veg, response_radius, contingency_border, jump_prob, numLinesJumped):
-        # Setting the x,y lower and upper bounds for the fire line boarder
-        if i - response_radius < 0:
-            x_lower = 0
-        else:
-            x_lower = i - response_radius
-
-        if i + response_radius > np.size(veg, 0)-1:
-            x_upper = 0
-        else:
-            x_upper = i + response_radius 
-
-        if j - response_radius < 0:
-            y_lower = 0
-        else:
-            y_lower = j - response_radius         
-        
-        if j + response_radius > np.size(veg, 1)-1:
-            y_upper = 0
-        else:
-            y_upper = j + response_radius
-
-        # Setting the vegitation type to 4 for the fire lines
-        for i in range(x_lower, x_upper+1):
-            if contained[i][y_lower] == 0: # if the potential left fire line is not already contained
-                canJump = jumpFireLine(jump_prob)
-                if canJump == False:
-                    veg[i][y_lower] = 4 # Representative of fire boarder
-                else:
-                    numLinesJumped += 1    
-            if contained[i][y_upper] == 0:   
-                canJump = jumpFireLine(jump_prob) # if the potential right fire line is not already contained
-                if canJump == False:
-                    veg[i][y_upper] = 4 # Representative of fire border
-                else:
-                    numLinesJumped += 1
-        for j in range(y_lower, y_upper+1):
-            if contained[x_lower][j] == 0:
-                canJump = jumpFireLine(jump_prob)
-                if canJump == False:
-                    veg[x_lower][j] = 4 # Representative of fire boarder
-                else:
-                    numLinesJumped += 1    
-            if contained[x_upper][j] == 0:    
-                canJump = jumpFireLine(jump_prob)
-                if canJump == False:
-                    veg[x_upper][j] = 4 # Representative of fire boarder
-                else:
-                    numLinesJumped += 1  
-
-        # create the contained zone
-        for i in range(x_lower, x_upper+1):
-            for j in range(y_lower, y_upper+1):
-                if i > x_lower and i < x_upper and j > y_lower and j < y_upper:
-                    contained[i][j] = 1        
-                        
 
 # midPointCircleDraw: 
 # Source: https://www.geeksforgeeks.org/mid-point-circle-drawing-algorithm/

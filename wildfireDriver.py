@@ -17,15 +17,17 @@ N = 1
 totBurnArea = []
 # burnTime is the total burn time (in hours) of the fire before containment
 burnTime = []
-# linesJumped is the total number of fire lines jumped
-linesJumped = []
+# linesBuilt is the number of cells of fire lines (of any type) built during the simulation run
+linesBuilt = []
+# linesEngaged is the number of cells of fire lines which engaged with the fire at any point during the simulation run
+linesEngaged = []
 
 # Read data and initialize constant inputs
 # img holds the vegetation raster data from the LANDFIRE database
 img = rasterio.open('/Users/sprin/OneDrive/Desktop/IOE574/TermProject/IOE574WildfireSimulation/us_210evc.tif')
 # 'map' holds original vegetation raster data from TIFF file
 map = img.read()
-# 'veg' is a 2D matrix containing the cell vegetation type as an integer (0 = unburnable, 1 = trees, 2 = shrub, 3 = herb, 4 = fire boarder)
+# 'veg' is a 2D matrix containing the cell vegetation type as an integer (0 = unburnable, 1 = trees, 2 = shrub, 3 = herb, 4 = fire border)
 veg = np.floor_divide(map[0], np.ones([np.size(map, 1), np.size(map, 2)], dtype=int)*100)
 # 'den' holds the densitity of the vegetation type as a number between 0 and 100
 # TODO: 'den' is currently unused
@@ -36,8 +38,7 @@ for n in range(N):
     # Initialize replication-specific variables
     # 'fire' is a 2D matrix containing the percentage on fire of each cell on the map
     fire = np.zeros((np.size(map, 1), np.size(map, 2)), dtype=float)
-    # contained is a 2D matrix containing the status of the cell's containment 
-    #   (1 if is is within a fire-line, 0 otherwise)
+    # contained is a 2D matrix containing the status of the cell's containment (1 if is is within a fire-line, 0 otherwise)
     contained = np.zeros((np.size(map, 1), np.size(map, 2)), dtype=float)
     # igniteTime is a 2D matrix containing the time (in hours) during which each cell ignites
     igniteTime = np.zeros((np.size(map, 1), np.size(map, 2)), dtype=float)
@@ -51,10 +52,10 @@ for n in range(N):
     startj = 24 # 'startj' is the j index (corresponding to longitude) where the fire initiates
     t = 0 # time elapsed, in hours
     del_t = 0.5 # in hours, the time step between updates of the fire status
-    numLinesJumped = 0 # the number of lines jumped in this iteration
-    jump_prob = 0.10 # the probability that the fire jumps any given fire line
-    response_radius = 4
-    response_time = 2 # the number of hours before initial contingency lines are built
+    breachProb = 0.10 # the probability that the fire jumps any given fire line
+    primaryBuffer = 5 # the number of cells away from the active fire border where the primary lines are built
+    responseRadius = 4 # the number of cells away from the breach where the fire line will be built
+    responseTime = 2 # the number of hours before initial contingency lines are built
 
     # Ignite the fire
     fire[starti][startj] = 1 # Start fire at location 28, 24 with cell 100% on fire
@@ -72,7 +73,6 @@ for n in range(N):
         
         count += 1 # increment the count
         t += del_t # increment time
-        newCellSpread = 0 # reset 'newCellSpread' to zero so it can be incremented as fire spreads 
         tempFire = copy.deepcopy(fire) # 'tempFire' is a temporary fire matrix to store new % of fire info. Use of this temp
             # matrix ensures that all fire spread depends on the state of spread in the previous time step, 
             # not the current time step (thus preventing spreading too quickly).
@@ -80,51 +80,8 @@ for n in range(N):
             # Use of this temp vector ensures that the nested for loops do not reach cells outside of the border
             # for the previous time step's fire (thus preventing spreading too quickly).    
         
-        # Drawing boarder for fire lines at time = 2 hours, this is done as soon as t = 2
-        if t == response_time:
-            # Setting the x,y lower and upper bounds for the fire line boarder
-            x_lower = tempFireBorder[0] - 5
-            x_upper = tempFireBorder[1] + 5
-            y_lower = tempFireBorder[2] - 5
-            y_upper = tempFireBorder[3] + 5
-            contingency_border = [x_lower, x_upper, y_lower, y_upper]
-            # Setting the vegitation type to 4 for the fire lines
-            for i in range(x_lower, x_upper+1):
-                canJump = jumpFireLine(jump_prob)
-                if canJump == False:
-                    contained[i][y_lower] = 1
-                    veg[i][y_lower] = 4 # Representative of fire boarder
-                else:
-                    contained[i][y_lower] = -1
-                    numLinesJumped += 1
-                canJump = jumpFireLine(jump_prob)    
-                if canJump == False:
-                    contained[i][y_upper] = 1
-                    veg[i][y_upper] = 4    
-                else:
-                    contained[i][y_upper] = -1
-                    numLinesJumped += 1    
-            for j in range(y_lower, y_upper+1):
-                canJump = jumpFireLine(jump_prob)
-                if canJump == False:
-                    contained[x_lower][j] = 1
-                    veg[x_lower][j] = 4
-                else:
-                    contained[x_lower][j] = -1
-                    numLinesJumped += 1
-                canJump = jumpFireLine(jump_prob)      
-                if canJump == False:
-                    contained[x_upper][j] = 1
-                    veg[x_upper][j] = 4
-                else:
-                    contained[x_upper][j] = -1
-                    numLinesJumped += 1        
-
-            # create the contained zone
-            for i in range(np.size(fire, 0)):
-                for j in range(np.size(fire, 1)):
-                    if i > x_lower and i < x_upper and j > y_lower and j < y_upper:
-                        contained[i][j] = 1  
+        # Draw all primary fire lines as soon as t == responseTime
+        if t == responseTime: buildPrimaryLines(i, j, contained, veg, primaryBuffer, breachProb, tempFireBorder)
 
         # traverse the rectangular border around the fire edge plus one cell on each side
         for i in range(fireBorder[0] - 1, fireBorder[1] + 2): # i is latitutde index
@@ -134,13 +91,10 @@ for n in range(N):
                         if (veg[i][j]!=0) and (fire[i][j]!=1 and veg[i][j]!=4): # skip all unburnable cells or all completely on fire cells                        
                             # determine which neighbors to spread fire from (see 'ignite' helper function)  
                             cell_transition, spread_prob  = igniteCell(fire, i, j, distance[i][j], wind_speed, wind_direction)
-                            # determine if cell i,j is newly ignited and increment 'newCellSpread' if so
-                            if (fire[i][j] == 0) and (np.sum(cell_transition) > 0):
-                                newCellSpread += 1
-                                # check if this is a fire line breach if we've built a fire line yet
-                                if contained[i][j] == -1:
-                                    # if so, build a response line!
-                                    buildResponseLine(i,j, contained, veg, response_radius, contingency_border, 0, numLinesJumped)    
+                            # determine if the cell is newly ignited and a fire line breach
+                            if (fire[i][j] == 0) and (np.sum(cell_transition) > 0 and contained[i][j]== -1):
+                                # if so, build a response line!
+                                buildResponseLine(i,j, contained, veg, responseRadius, 0)    
                             # determine the amount of spread from each neighbor which has ignitied cell i,j
                                 # (see 'advanceBurn' helper function)
                             distance[i][j] = advanceBurn(veg[i][j], cell_transition, distance[i][j], del_t)
@@ -149,18 +103,13 @@ for n in range(N):
                             tempFire[i][j] = spreadFire(distance[i][j], spread_prob)
                             # update 'tempFireBorder' to be the fire border of the current time step
                             if tempFire[i][j] > 0:
-                                if i < fireBorder[0]: 
-                                    tempFireBorder[0] = i
-                                elif i > fireBorder[1]: 
-                                    tempFireBorder[1] = i
-                                if j < fireBorder[2]: 
-                                    tempFireBorder[2] = j
-                                elif j > fireBorder[3]: 
-                                    tempFireBorder[3] = j 
-                    else:
-                        borderReached = True
-            else:
-                borderReached = True
+                                if i < fireBorder[0]: tempFireBorder[0] = i
+                                elif i > fireBorder[1]: tempFireBorder[1] = i
+                                if j < fireBorder[2]: tempFireBorder[2] = j
+                                elif j > fireBorder[3]: tempFireBorder[3] = j 
+                    else: borderReached = True
+            else: borderReached = True
+
         zeroSpread = np.sum(fire) == np.sum(tempFire) # there is zero spread of fire when the total percent
             # on fire of all cells is equal between the previous time step and current time step
         fire = copy.deepcopy(tempFire) # update fire matrix 
@@ -170,7 +119,6 @@ for n in range(N):
 
     # show results in map
     showResults(fire, veg)
-    show(contained, cmap='Blues')
 
     # Store simulation results
     # Total area burned (m^2)
@@ -179,12 +127,8 @@ for n in range(N):
 
     # Total burn time 
     burnTime.append(t)
-    print(t)
-
-    # Number of fire lines jumped
-    linesJumped.append(numLinesJumped)
-    print(numLinesJumped)
+    print(burnTime)
     
 
 # Finish
-print("done")    
+print("Simulation Complete")    

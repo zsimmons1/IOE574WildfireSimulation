@@ -68,6 +68,7 @@ for n in range(N):
     count = -1 # 'count' tracks the number of time steps though the while loop
     newCellSpread = 999999 # Initially set 'newCellSpread' high so that we initiate while loop
     borderReached = False # Initialize that the fire has not spread to the borders of the map
+    unburnedContained = 999999 # Initially set 'unburnedContained' high so that we initiate while loop
     while (newCellSpread > 0) & (borderReached == False):
         count += 1 # increment the count
         t += del_t # increment time
@@ -81,6 +82,7 @@ for n in range(N):
         
         # Drawing boarder for fire lines at time = 2 hours, this is done as soon as t = 2
         if t == response_time:
+            unburnedContained -= 999999 # Reset 'unburnedContained' to the value of contained cells burned
             # Setting the x,y lower and upper bounds for the fire line boarder
             x_lower = tempFireBorder[0] - 5
             x_upper = tempFireBorder[1] + 5
@@ -123,8 +125,11 @@ for n in range(N):
             for i in range(np.size(fire, 0)):
                 for j in range(np.size(fire, 1)):
                     if i > x_lower and i < x_upper and j > y_lower and j < y_upper:
-                        contained[i][j] = 1            
-            show(contained, cmap='Blues')
+                        contained[i][j] = 1  
+                        # if the cell is burnable
+                        if veg[i][j] != 0 and veg[i][j]!= 4:
+                            # then increment 'unburnedContained'
+                            unburnedContained += 1
 
         # traverse the rectangular border around the fire edge plus one cell on each side
         for i in range(fireBorder[0] - 1, fireBorder[1] + 2): # i is latitutde index
@@ -140,10 +145,9 @@ for n in range(N):
                                 # check if this is a fire line breach if we've built a fire line yet
                                 if contained[i][j] == -1:
                                     # if so, build a response line!
-                                    buildResponseLine(i,j, contained, veg, response_radius, contingency_border, 0, numLinesJumped)
-                                    # showResults(fire, veg)
-                                    # show(contained, cmap='Blues')
-
+                                    buildResponseLine(i,j, contained, unburnedContained, veg, response_radius, contingency_border, 0, numLinesJumped)
+                                # decrement 'unburnedContained'
+                                unburnedContained -= 1    
                             # determine the amount of spread from each neighbor which has ignitied cell i,j
                                 # (see 'advanceBurn' helper function)
                             distance[i][j] = advanceBurn(veg[i][j], cell_transition, distance[i][j], del_t)

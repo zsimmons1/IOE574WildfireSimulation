@@ -250,7 +250,7 @@ def jumpFireLine(jump_prob):
     # response_radius is the radius of the squre of the reponse line
     # contingency_border is a vector of [x_lower, x_upper, y_lower, y_upper] of the fire line that was breached
     # jump_prob is the probability that any fire will jump a fire line
-def buildResponseLine(i,j, contained, veg, response_radius, contingency_border, jump_prob, numLinesJumped):
+def buildResponseLine(i,j, contained, unburnedContained, veg, response_radius, contingency_border, jump_prob, numLinesJumped):
         # Setting the x,y lower and upper bounds for the fire line boarder
         if i - response_radius < 0:
             x_lower = 0
@@ -277,15 +277,12 @@ def buildResponseLine(i,j, contained, veg, response_radius, contingency_border, 
             if contained[i][y_lower] == 0: # if the potential left fire line is not already contained
                 canJump = jumpFireLine(jump_prob)
                 if canJump == False:
-                    # print("y_lower")
                     veg[i][y_lower] = 4 # Representative of fire boarder
                 else:
-                    print("Error: y_lower jumped")
                     numLinesJumped += 1    
             if contained[i][y_upper] == 0:   
                 canJump = jumpFireLine(jump_prob) # if the potential right fire line is not already contained
                 if canJump == False:
-                    # print("y_upper") 
                     veg[i][y_upper] = 4 # Representative of fire border
                 else:
                     numLinesJumped += 1
@@ -293,14 +290,12 @@ def buildResponseLine(i,j, contained, veg, response_radius, contingency_border, 
             if contained[x_lower][j] == 0:
                 canJump = jumpFireLine(jump_prob)
                 if canJump == False:
-                    # print("x_lower")
                     veg[x_lower][j] = 4 # Representative of fire boarder
                 else:
                     numLinesJumped += 1    
             if contained[x_upper][j] == 0:    
                 canJump = jumpFireLine(jump_prob)
                 if canJump == False:
-                    # print("x_upper")
                     veg[x_upper][j] = 4 # Representative of fire boarder
                 else:
                     numLinesJumped += 1  
@@ -308,8 +303,12 @@ def buildResponseLine(i,j, contained, veg, response_radius, contingency_border, 
         # create the contained zone
         for i in range(x_lower, x_upper+1):
             for j in range(y_lower, y_upper+1):
-                if i >= x_lower and i <= x_upper and j >= y_lower and j <= y_upper:
-                    contained[i][j] = 1              
+                if i > x_lower and i < x_upper and j > y_lower and j < y_upper:
+                    contained[i][j] = 1   
+                    # if the cell is burnable
+                    if veg[i][j] != 0 and veg[i][j]!= 4:
+                        # then increment 'unburnedContained'
+                        unburnedContained += 1       
                         
 
 # midPointCircleDraw: 

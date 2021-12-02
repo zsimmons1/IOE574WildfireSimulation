@@ -66,10 +66,10 @@ for n in range(N):
 
     # Spread fire and build fire lines until fire is 95% contained OR fire spreads beyond map borders(?)
     count = -1 # 'count' tracks the number of time steps though the while loop
-    newCellSpread = 999999 # Initially set 'newCellSpread' high so that we initiate while loop
-    borderReached = False # Initialize that the fire has not spread to the borders of the map
-    unburnedContained = 999999 # Initially set 'unburnedContained' high so that we initiate while loop
-    while (newCellSpread > 0) & (borderReached == False):
+    zeroSpread = False # Initially set 'zeroSpread' to False so we ititiate the while loop
+    borderReached = False # Initially set 'borderReached' to False so we initiate the while loop
+    while (zeroSpread == False and borderReached == False):
+        
         count += 1 # increment the count
         t += del_t # increment time
         newCellSpread = 0 # reset 'newCellSpread' to zero so it can be incremented as fire spreads 
@@ -82,7 +82,6 @@ for n in range(N):
         
         # Drawing boarder for fire lines at time = 2 hours, this is done as soon as t = 2
         if t == response_time:
-            unburnedContained -= 999999 # Reset 'unburnedContained' to the value of contained cells burned
             # Setting the x,y lower and upper bounds for the fire line boarder
             x_lower = tempFireBorder[0] - 5
             x_upper = tempFireBorder[1] + 5
@@ -126,10 +125,6 @@ for n in range(N):
                 for j in range(np.size(fire, 1)):
                     if i > x_lower and i < x_upper and j > y_lower and j < y_upper:
                         contained[i][j] = 1  
-                        # if the cell is burnable
-                        if veg[i][j] != 0 and veg[i][j]!= 4:
-                            # then increment 'unburnedContained'
-                            unburnedContained += 1
 
         # traverse the rectangular border around the fire edge plus one cell on each side
         for i in range(fireBorder[0] - 1, fireBorder[1] + 2): # i is latitutde index
@@ -145,9 +140,7 @@ for n in range(N):
                                 # check if this is a fire line breach if we've built a fire line yet
                                 if contained[i][j] == -1:
                                     # if so, build a response line!
-                                    buildResponseLine(i,j, contained, unburnedContained, veg, response_radius, contingency_border, 0, numLinesJumped)
-                                # decrement 'unburnedContained'
-                                unburnedContained -= 1    
+                                    buildResponseLine(i,j, contained, veg, response_radius, contingency_border, 0, numLinesJumped)    
                             # determine the amount of spread from each neighbor which has ignitied cell i,j
                                 # (see 'advanceBurn' helper function)
                             distance[i][j] = advanceBurn(veg[i][j], cell_transition, distance[i][j], del_t)
@@ -168,7 +161,8 @@ for n in range(N):
                         borderReached = True
             else:
                 borderReached = True
-
+        zeroSpread = np.sum(fire) == np.sum(tempFire) # there is zero spread of fire when the total percent
+            # on fire of all cells is equal between the previous time step and current time step
         fire = copy.deepcopy(tempFire) # update fire matrix 
         fire_timeline = np.insert(fire_timeline, count, tempFire, axis=2) # store fire status into timeline matrix
         fireBorder = copy.deepcopy(tempFireBorder) # update fire border

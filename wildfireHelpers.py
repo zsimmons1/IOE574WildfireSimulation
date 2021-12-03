@@ -190,8 +190,8 @@ def rectangleLine(veg, fireLineBounds, contained, breachProb):
             if breachFireLine(breachProb) == False: veg[rU][j] = 4 
             else: contained[rU][j] = -1
     # Create the contained zone from the new fire line
-    for i in range(rL-1, rU):
-        for j in range(cL-1, cU):
+    for i in range(rL+1, rU):
+        for j in range(cL+1, cU):
             contained[i][j] = 1      
     return 0  
 

@@ -52,7 +52,7 @@ for n in range(N):
     startj = 24 # 'startj' is the j index (corresponding to longitude) where the fire initiates
     t = 0 # time elapsed, in hours
     del_t = 0.5 # in hours, the time step between updates of the fire status
-    breachProb = 0.10 # the probability that the fire jumps any given fire line
+    breachProb = 0.1 # the probability that the fire jumps any given fire line
     primaryBuffer = 5 # the number of cells away from the active fire border where the primary lines are built
     responseRadius = 4 # the number of cells away from the breach where the fire line will be built
     responseTime = 2 # the number of hours before initial contingency lines are built
@@ -94,7 +94,7 @@ for n in range(N):
                             # determine if the cell is newly ignited and a fire line breach
                             if (fire[i][j] == 0) and (np.sum(cell_transition) > 0 and contained[i][j]== -1):
                                 # if so, build a response line!
-                                buildResponseLine(i,j, contained, veg, responseRadius, 0)    
+                                buildResponseLine(i,j, contained, veg, responseRadius, breachProb)    
                             # determine the amount of spread from each neighbor which has ignitied cell i,j
                                 # (see 'advanceBurn' helper function)
                             distance[i][j] = advanceBurn(veg[i][j], cell_transition, distance[i][j], del_t)

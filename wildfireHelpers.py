@@ -218,12 +218,23 @@ def circularLines(veg, fireLineBounds, contained, breachProb):
 
     for i in range(rL-7, rU+7): # Check a range well outside of the max radius
         for j in range(cL-7, cU+7):
-            currDist = distCalculator(rC, cC, i, j)
-            if rad <= currDist:
-                if currDist - 1.5 < rad:
-                    if breachFireLine(breachProb) == False:
-                        veg[i][j] = 4
+            # Setting the x,y lower and upper bounds for the fire line boarder to ensure they do not exceed the 
+            # bounds of the map
+            if i < 0: i = 0 # left fire line boundary
+            if i > np.size(veg, 0)-1: i = np.size(veg, 0)-1 # right fire line boundary
+            if j < 0: j = 0 # lower fire line boundary      
+            if j > np.size(veg, 1)-1: j = np.size(veg, 1)-1 # upper fire line boundary
 
+            if contained[i][j] == 0: # if the potential South fire line is not already contained  
+                currDist = distCalculator(rC, cC, i, j)
+                if currDist - 1.5 < rad:
+                    if rad <= currDist:
+                        if breachFireLine(breachProb) == False:
+                            veg[i][j] = 4
+                        else:
+                            contained[i][j] = -1    
+                    else:
+                        contained[i][j] = 1        
     return 0
 
 # buildPrimaryLines:
@@ -234,26 +245,32 @@ def circularLines(veg, fireLineBounds, contained, breachProb):
     # 'fireBuffer' is the number of cells between the active fire border and location of primary fire line
     # 'breachProb' is the probability that any fire will jump a fire line
     # 'tempFireBorder' is the current position of the active fire border in each direction
-def buildPrimaryLines(i, j, contained, veg, primaryBuffer, breachProb, tempFireBorder):
+def buildProactiveLines(i, j, contained, veg, buffer, breachProb, tempFireBorder, fireLineShape):
     # Setting the x,y lower and upper bounds for the fire line boarder
-    rL = tempFireBorder[0] - primaryBuffer # row lower bound (northmost)
-    rU = tempFireBorder[1] + primaryBuffer # row upper bound (southmost)
-    cL = tempFireBorder[2] - primaryBuffer # column lower bound (westmost)
-    cU = tempFireBorder[3] + primaryBuffer # column upper bound (eastmost)
-    # call the rectangleLine function to build the primary fire line  
-    rectangleLine(veg, [rL, rU, cL, cU], contained, breachProb) 
+    rL = tempFireBorder[0] - buffer # row lower bound (northmost)
+    rU = tempFireBorder[1] + buffer # row upper bound (southmost)
+    cL = tempFireBorder[2] - buffer # column lower bound (westmost)
+    cU = tempFireBorder[3] + buffer # column upper bound (eastmost)
+    # check the fireLineShape and call the appropriate helper function
+    if fireLineShape == "rectangle":
+        rectangleLine(veg, [rL, rU, cL, cU], contained, breachProb) 
+    elif fireLineShape == "circle":
+        circularLines(veg, [rL, rU, cL, cU], contained, breachProb)    
     return 0
 
-def buildConcentricLines(i, j, contained, veg, primaryBuffer, breachProb, tempFireBorder):
-    # We can use the same primaryBuffer because in the cicularLines function we add extra buffer
-    # for the conecentric contingency lines when calculating the radius
-    rL = tempFireBorder[0] - primaryBuffer
-    rU = tempFireBorder[1] + primaryBuffer
-    cL = tempFireBorder[2] - primaryBuffer
-    cU = tempFireBorder[3] + primaryBuffer
-    # Call the circularLines function to build the concentric contingency fire line
-    circularLines(veg, [rL, rU, cL, cU], contained, breachProb)
-    return 0      
+# def buildConcentricLines(i, j, contained, veg, primaryBuffer, breachProb, tempFireBorder, fireLineShape):
+#     # We can use the same primaryBuffer because in the cicularLines function we add extra buffer
+#     # for the conecentric contingency lines when calculating the radius
+#     rL = tempFireBorder[0] - primaryBuffer
+#     rU = tempFireBorder[1] + primaryBuffer
+#     cL = tempFireBorder[2] - primaryBuffer
+#     cU = tempFireBorder[3] + primaryBuffer
+#     # check the fireLineShape and call the appropriate helper function
+#     if fireLineShape == "rectangle":
+#         rectangleLine(veg, [rL, rU, cL, cU], contained, breachProb) 
+#     elif fireLineShape == "circle":
+#         circularLines(veg, [rL, rU, cL, cU], contained)
+#     return 0      
 
 # buildResponseLine:
     # 'i' is the latitude index of the cell where the fire line was breached
@@ -262,7 +279,7 @@ def buildConcentricLines(i, j, contained, veg, primaryBuffer, breachProb, tempFi
     # 'veg' is a 2D matrix containing the cell vegetation type as an integer (4 indicates an unbreached fire border)
     # 'responseRadius' is the radius of the squre of the reponse line
     # 'breachProb' is the probability that any fire will jump a fire line
-def buildResponseLine(i, j, contained, veg, responseRadius, breachProb):
+def buildResponseLine(i, j, contained, veg, responseRadius, breachProb, fireLineShape):
         # Setting the x,y lower and upper bounds for the fire line boarder to ensure they do not exceed the 
             # bounds of the map
         # left fire line boundary
@@ -277,8 +294,11 @@ def buildResponseLine(i, j, contained, veg, responseRadius, breachProb):
         # upper fire line boundary
         if j + responseRadius > np.size(veg, 1)-1: cU = 0
         else: cU = j + responseRadius      
-        # call the rectangleLine function to build the response fire line    
-        rectangleLine(veg, [rL, rU, cL, cU], contained, breachProb)  
+        # check the fireLineShape and call the appropriate helper function
+        if fireLineShape == "rectangle":
+            rectangleLine(veg, [rL, rU, cL, cU], contained, breachProb) 
+        elif fireLineShape == "circle":
+            circularLines(veg, [rL, rU, cL, cU], contained, breachProb) 
 
 # showResults: Plots the map of the area pre-burn and post-burn
     # 'fire' is a 2D matrix containing the percentage on fire of each cell on the map

@@ -24,7 +24,7 @@ linesEngaged = []
 
 # Read data and initialize constant inputs
 # img holds the vegetation raster data from the LANDFIRE database
-img = rasterio.open('/Users/Zack/Desktop/IOE574/TermProject/IOE574WildfireSimulation/us_210evc.tif')
+img = rasterio.open('/Users/sprin/OneDrive/Desktop/IOE574/TermProject/IOE574WildfireSimulation/us_210evc.tif')
 # 'map' holds original vegetation raster data from TIFF file
 map = img.read()
 # 'veg' is a 2D matrix containing the cell vegetation type as an integer (0 = unburnable, 1 = trees, 2 = shrub, 3 = herb, 4 = fire border)
@@ -52,11 +52,13 @@ for n in range(N):
     startj = 24 # 'startj' is the j index (corresponding to longitude) where the fire initiates
     t = 0 # time elapsed, in hours
     del_t = 0.5 # in hours, the time step between updates of the fire status
-    breachProb = 0.1 # the probability that the fire jumps any given fire line
-    primaryBuffer = 5 # the number of cells away from the active fire border where the primary lines are built
-    responseRadius = 4 # the number of cells away from the breach where the fire line will be built
+    breachProb = 0.05 # the probability that the fire jumps any given fire line
+    primaryBuffer = 4 # the number of cells away from the active fire border where the primary lines are built
+    responseRadius = 3 # the number of cells away from the breach where the fire line will be built
     responseTime = 2 # the number of hours before initial contingency lines are built
-    concentricContingency = False
+    concentricContingency = False # a boolean variable indicating if we will build a proactive concentric contingency line
+    fireLineShape = "circle" # a string variable indicating whether the fire lines will be rectangular or cirucular
+    contingencyBuffer = primaryBuffer + 3
 
     # Ignite the fire
     fire[starti][startj] = 1 # Start fire at location 28, 24 with cell 100% on fire
@@ -83,15 +85,14 @@ for n in range(N):
         
         # Draw all primary fire lines as soon as t == responseTime
         if t == responseTime: 
-            buildPrimaryLines(i, j, contained, veg, primaryBuffer, breachProb, tempFireBorder)
+            buildProactiveLines(i, j, contained, veg, primaryBuffer, breachProb, tempFireBorder, fireLineShape)
             # This will be used as either the radius or the new upper/lower bounds for the contingency lines
-            contingencyBuffer = primaryBuffer + 3
             if concentricContingency:
-                buildConcentricLines(i, j, contained, veg, primaryBuffer, breachProb, tempFireBorder)
-            else:
-                # To build the spoke contingency lines we can reuse the primary lines but pass in a larger buffer value
-                buildPrimaryLines(i, j, contained, veg, contingencyBuffer, breachProb, tempFireBorder)
-
+                buildProactiveLines(i, j, contained, veg, contingencyBuffer, breachProb, tempFireBorder, fireLineShape)
+            # else:
+            #     # To build the spoke contingency lines we can reuse the primary lines but pass in a larger buffer value
+            #     buildPrimaryLines(i, j, contained, veg, contingencyBuffer, breachProb, tempFireBorder)
+            show(contained, cmap='Blues')
         # traverse the rectangular border around the fire edge plus one cell on each side
         for i in range(fireBorder[0] - 1, fireBorder[1] + 2): # i is latitutde index
             if i < np.size(fire, 0)-1: # ensures cell is in latitute bounds of map
@@ -103,7 +104,7 @@ for n in range(N):
                             # determine if the cell is newly ignited and a fire line breach
                             if (fire[i][j] == 0) and (np.sum(cell_transition) > 0 and contained[i][j]== -1):
                                 # if so, build a response line!
-                                buildResponseLine(i,j, contained, veg, responseRadius, breachProb)    
+                                buildResponseLine(i,j, contained, veg, responseRadius, breachProb, fireLineShape)    
                             # determine the amount of spread from each neighbor which has ignitied cell i,j
                                 # (see 'advanceBurn' helper function)
                             distance[i][j] = advanceBurn(veg[i][j], cell_transition, distance[i][j], del_t)

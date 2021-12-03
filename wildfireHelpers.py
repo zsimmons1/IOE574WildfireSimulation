@@ -214,7 +214,7 @@ def circularLines(veg, fireLineBounds, contained, breachProb):
     rad =  distCalculator(rC, cC, rU, cU)
 
     # Next for our lines we will add cushion to this radius for our circular lines
-    rad += 2
+    # rad += 2
 
     for i in range(rL-7, rU+7): # Check a range well outside of the max radius
         for j in range(cL-7, cU+7):
@@ -237,6 +237,59 @@ def circularLines(veg, fireLineBounds, contained, breachProb):
                         contained[i][j] = 1        
     return 0
 
+def addSpokes(veg, fireLineBounds, contained, breachProb):
+    # Unpack fire line bounds which will help calculate the radius of the circle
+    rL = fireLineBounds[0]
+    rU = fireLineBounds[1]
+    cL = fireLineBounds[2]
+    cU = fireLineBounds[3]
+
+    # First we have to find the center point
+    cC = (cL + cU) / 2 # Find the column center location
+    rC = (rL + rU) / 2 # Find the row center location
+
+    rC = int(rC)
+    cC = int(cC)
+
+    print("cC: ", cC)
+    print("rC: ", rC)
+    print("rL: ", rL)
+    print("cL: ", cL)
+    print("rU: ", rU)
+    print("cU: ", cU)
+
+    # Find slope for each
+    slope1 = (rU - rL) / (cU - cL)
+    slope2 = (rU - rL) / (cL - cU)
+
+    # Find dif between rL and cL to define diagonal line #1
+    b1 = rU - (slope1*cU)
+    # Find dif between rL and cU to define other diagonal line #2
+    b2 = rU - (slope2*cL)
+
+    # y = mx + b
+    # j is a column but an x in linear eq
+    # i is a row but a y in linear eq
+
+    for i in range(rL, rU + 1):
+        for j in range(cL, cU + 1):            
+            if i == int(j*slope1)+b1:
+                if breachFireLine(breachProb) == False:
+                    veg[i][j] = 4
+                    veg[i+1][j] = 4
+            if i == int(j*slope2)+b2:
+                if breachFireLine(breachProb) == False:
+                    veg[i][j] = 4
+                    veg[i + 1][j] = 4
+            if i == rC:
+                if breachFireLine(breachProb) == False:
+                    veg[rC][j] = 4
+            if j == cC:
+                if breachFireLine(breachProb) == False:
+                    veg[i][cC] = 4
+
+    return 0
+
 # buildPrimaryLines:
     # 'i' is the latitude index of the cell where the fire line was breached
     # 'j' is the longitude index of the cell where the fire line was breached
@@ -254,8 +307,10 @@ def buildProactiveLines(i, j, contained, veg, buffer, breachProb, tempFireBorder
     # check the fireLineShape and call the appropriate helper function
     if fireLineShape == "rectangle":
         rectangleLine(veg, [rL, rU, cL, cU], contained, breachProb) 
+        addSpokes(veg, [rL, rU, cL, cU], contained, breachProb)
     elif fireLineShape == "circle":
-        circularLines(veg, [rL, rU, cL, cU], contained, breachProb)    
+        circularLines(veg, [rL, rU, cL, cU], contained, breachProb)
+        addSpokes(veg, [rL-3, rU+3, cL-3, cU+3], contained, breachProb)
     return 0
 
 # def buildConcentricLines(i, j, contained, veg, primaryBuffer, breachProb, tempFireBorder, fireLineShape):

@@ -24,7 +24,7 @@ linesEngaged = []
 
 # Read data and initialize constant inputs
 # img holds the vegetation raster data from the LANDFIRE database
-img = rasterio.open('/Users/sprin/OneDrive/Desktop/IOE574/TermProject/IOE574WildfireSimulation/us_210evc.tif')
+img = rasterio.open('/Users/Zack/Desktop/IOE574/TermProject/IOE574WildfireSimulation/us_210evc.tif')
 # 'map' holds original vegetation raster data from TIFF file
 map = img.read()
 # 'veg' is a 2D matrix containing the cell vegetation type as an integer (0 = unburnable, 1 = trees, 2 = shrub, 3 = herb, 4 = fire border)
@@ -57,7 +57,7 @@ for n in range(N):
     responseRadius = 3 # the number of cells away from the breach where the fire line will be built
     responseTime = 2 # the number of hours before initial contingency lines are built
     concentricContingency = False # a boolean variable indicating if we will build a proactive concentric contingency line
-    fireLineShape = "circle" # a string variable indicating whether the fire lines will be rectangular or cirucular
+    fireLineShape = "rectangle" # a string variable indicating whether the fire lines will be rectangular or cirucular
     contingencyBuffer = primaryBuffer + 3
 
     # Ignite the fire

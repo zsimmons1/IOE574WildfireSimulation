@@ -193,7 +193,38 @@ def rectangleLine(veg, fireLineBounds, contained, breachProb):
     for i in range(rL+1, rU):
         for j in range(cL+1, cU):
             contained[i][j] = 1      
-    return 0  
+    return 0
+
+def distCalculator(x1, y1, x2, y2):
+    dist = ((x2 - x1)**(2) + (y2-y1)**(2))**(0.5)
+    return dist
+
+def circularLines(veg, fireLineBounds, contained, breachProb):
+    # Unpack fire line bounds which will help calculate the radius of the circle
+    rL = fireLineBounds[0]
+    rU = fireLineBounds[1]
+    cL = fireLineBounds[2]
+    cU = fireLineBounds[3]
+
+    # First we have to find the center point
+    cC = (cL + cU) / 2 # Find the column center location
+    rC = (rL + rU) / 2 # Find the row center location
+
+    # Now the radius will be the distance from (rU, cU) to (rC, cC)
+    rad =  distCalculator(rC, cC, rU, cU)
+
+    # Next for our lines we will add cushion to this radius for our circular lines
+    rad += 2
+
+    for i in range(rL-7, rU+7): # Check a range well outside of the max radius
+        for j in range(cL-7, cU+7):
+            currDist = distCalculator(rC, cC, i, j)
+            if rad <= currDist:
+                if currDist - 1.5 < rad:
+                    if breachFireLine(breachProb) == False:
+                        veg[i][j] = 4
+
+    return 0
 
 # buildPrimaryLines:
     # 'i' is the latitude index of the cell where the fire line was breached
@@ -211,6 +242,17 @@ def buildPrimaryLines(i, j, contained, veg, primaryBuffer, breachProb, tempFireB
     cU = tempFireBorder[3] + primaryBuffer # column upper bound (eastmost)
     # call the rectangleLine function to build the primary fire line  
     rectangleLine(veg, [rL, rU, cL, cU], contained, breachProb) 
+    return 0
+
+def buildConcentricLines(i, j, contained, veg, primaryBuffer, breachProb, tempFireBorder):
+    # We can use the same primaryBuffer because in the cicularLines function we add extra buffer
+    # for the conecentric contingency lines when calculating the radius
+    rL = tempFireBorder[0] - primaryBuffer
+    rU = tempFireBorder[1] + primaryBuffer
+    cL = tempFireBorder[2] - primaryBuffer
+    cU = tempFireBorder[3] + primaryBuffer
+    # Call the circularLines function to build the concentric contingency fire line
+    circularLines(veg, [rL, rU, cL, cU], contained, breachProb)
     return 0      
 
 # buildResponseLine:

@@ -24,7 +24,7 @@ linesEngaged = []
 
 # Read data and initialize constant inputs
 # img holds the vegetation raster data from the LANDFIRE database
-img = rasterio.open('/Users/sprin/OneDrive/Desktop/IOE574/TermProject/IOE574WildfireSimulation/us_210evc.tif')
+img = rasterio.open('/Users/Zack/Desktop/IOE574/TermProject/IOE574WildfireSimulation/us_210evc.tif')
 # 'map' holds original vegetation raster data from TIFF file
 map = img.read()
 # 'veg' is a 2D matrix containing the cell vegetation type as an integer (0 = unburnable, 1 = trees, 2 = shrub, 3 = herb, 4 = fire border)
@@ -56,6 +56,7 @@ for n in range(N):
     primaryBuffer = 5 # the number of cells away from the active fire border where the primary lines are built
     responseRadius = 4 # the number of cells away from the breach where the fire line will be built
     responseTime = 2 # the number of hours before initial contingency lines are built
+    concentricContingency = False
 
     # Ignite the fire
     fire[starti][startj] = 1 # Start fire at location 28, 24 with cell 100% on fire
@@ -81,7 +82,15 @@ for n in range(N):
             # for the previous time step's fire (thus preventing spreading too quickly).    
         
         # Draw all primary fire lines as soon as t == responseTime
-        if t == responseTime: buildPrimaryLines(i, j, contained, veg, primaryBuffer, breachProb, tempFireBorder)
+        if t == responseTime: 
+            buildPrimaryLines(i, j, contained, veg, primaryBuffer, breachProb, tempFireBorder)
+            # This will be used as either the radius or the new upper/lower bounds for the contingency lines
+            contingencyBuffer = primaryBuffer + 3
+            if concentricContingency:
+                buildConcentricLines(i, j, contained, veg, primaryBuffer, breachProb, tempFireBorder)
+            else:
+                # To build the spoke contingency lines we can reuse the primary lines but pass in a larger buffer value
+                buildPrimaryLines(i, j, contained, veg, contingencyBuffer, breachProb, tempFireBorder)
 
         # traverse the rectangular border around the fire edge plus one cell on each side
         for i in range(fireBorder[0] - 1, fireBorder[1] + 2): # i is latitutde index

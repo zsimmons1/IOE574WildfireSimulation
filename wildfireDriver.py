@@ -2,6 +2,7 @@
 import os 
 import matplotlib.pyplot as plt
 import matplotlib.lines as lines
+from matplotlib.colors import *
 import numpy as np
 import rasterio
 from rasterio.plot import show
@@ -12,30 +13,32 @@ import copy
 
 # Initialize simulation tracking variables
 # N is the number of replications to run
-N = 1
+N = 50
 # totBurnArea is the total area burned before fire containment
 totBurnArea = []
 # burnTime is the total burn time (in hours) of the fire before containment
 burnTime = []
 # linesBuilt is the number of cells of fire lines (of any type) built during the simulation run
-linesBuilt = []
+totLinesBuilt = []
 # linesEngaged is the number of cells of fire lines which engaged with the fire at any point during the simulation run
 linesEngaged = []
 
 # Read data and initialize constant inputs
 # img holds the vegetation raster data from the LANDFIRE database
-img = rasterio.open('/Users/Zack/Desktop/IOE574/TermProject/IOE574WildfireSimulation/us_210evc.tif')
+img = rasterio.open('/Users/sprin/OneDrive/Desktop/IOE574/TermProject/IOE574WildfireSimulation/us_210evc.tif')
 # 'map' holds original vegetation raster data from TIFF file
 map = img.read()
-# 'veg' is a 2D matrix containing the cell vegetation type as an integer (0 = unburnable, 1 = trees, 2 = shrub, 3 = herb, 4 = fire border)
-veg = np.floor_divide(map[0], np.ones([np.size(map, 1), np.size(map, 2)], dtype=int)*100)
 # 'den' holds the densitity of the vegetation type as a number between 0 and 100
 # TODO: 'den' is currently unused
 den = np.mod(map[0], np.ones((np.size(map, 1), np.size(map, 2)), dtype=int)*100)
+# 'cumulativeFire' is a 2D matrix containing the number of simulations in which each cell was on fire
+cumulativeFire = np.zeros((np.size(map, 1), np.size(map, 2)), dtype=float)
 
 # Run one replication
 for n in range(N):
     # Initialize replication-specific variables
+    # 'veg' is a 2D matrix containing the cell vegetation type as an integer (0 = unburnable, 1 = trees, 2 = shrub, 3 = herb, 4 = fire border)
+    veg = np.floor_divide(map[0], np.ones([np.size(map, 1), np.size(map, 2)], dtype=int)*100)
     # 'fire' is a 2D matrix containing the percentage on fire of each cell on the map
     fire = np.zeros((np.size(map, 1), np.size(map, 2)), dtype=float)
     # contained is a 2D matrix containing the status of the cell's containment (1 if is is within a fire-line, 0 otherwise)
@@ -46,8 +49,6 @@ for n in range(N):
     fullburnTime = np.zeros((np.size(map, 1), np.size(map, 2)), dtype=float)
     # 'distance' is a 3D matrix containing the distance of fire spread for each cell from each neighboring cell
     distance = np.zeros((np.size(map, 1), np.size(map, 2), 8), dtype=float)
-    # 'fire_timeline' is a 3D matrix containing the burn state of each cell at each time step in the simulation
-    fire_timeline = np.zeros((np.size(map, 1), np.size(map, 2), 20), dtype=float)
     starti = 28 # 'starti' is the i index (corresponding to latitude) where the fire initiates
     startj = 24 # 'startj' is the j index (corresponding to longitude) where the fire initiates
     t = 0 # time elapsed, in hours
@@ -59,6 +60,8 @@ for n in range(N):
     concentricContingency = False # a boolean variable indicating if we will build a proactive concentric contingency line
     fireLineShape = "rectangle" # a string variable indicating whether the fire lines will be rectangular or cirucular
     contingencyBuffer = primaryBuffer + 3
+    spokes = False
+    linesBuilt = 0
 
     # Ignite the fire
     fire[starti][startj] = 1 # Start fire at location 28, 24 with cell 100% on fire
@@ -85,14 +88,11 @@ for n in range(N):
         
         # Draw all primary fire lines as soon as t == responseTime
         if t == responseTime: 
-            buildProactiveLines(i, j, contained, veg, primaryBuffer, breachProb, tempFireBorder, fireLineShape)
+            buildProactiveLines(i, j, contained, veg, primaryBuffer, breachProb, tempFireBorder, fireLineShape, spokes, linesBuilt)
             # This will be used as either the radius or the new upper/lower bounds for the contingency lines
             if concentricContingency:
-                buildProactiveLines(i, j, contained, veg, contingencyBuffer, breachProb, tempFireBorder, fireLineShape)
-            # else:
-            #     # To build the spoke contingency lines we can reuse the primary lines but pass in a larger buffer value
-            #     buildPrimaryLines(i, j, contained, veg, contingencyBuffer, breachProb, tempFireBorder)
-            show(contained, cmap='Blues')
+                buildProactiveLines(i, j, contained, veg, contingencyBuffer, breachProb, tempFireBorder, fireLineShape, spokes, linesBuilt)
+
         # traverse the rectangular border around the fire edge plus one cell on each side
         for i in range(fireBorder[0] - 1, fireBorder[1] + 2): # i is latitutde index
             if i < np.size(fire, 0)-1: # ensures cell is in latitute bounds of map
@@ -104,7 +104,7 @@ for n in range(N):
                             # determine if the cell is newly ignited and a fire line breach
                             if (fire[i][j] == 0) and (np.sum(cell_transition) > 0 and contained[i][j]== -1):
                                 # if so, build a response line!
-                                buildResponseLine(i,j, contained, veg, responseRadius, breachProb, fireLineShape)    
+                                buildResponseLine(i,j, contained, veg, responseRadius, breachProb, fireLineShape, linesBuilt)    
                             # determine the amount of spread from each neighbor which has ignitied cell i,j
                                 # (see 'advanceBurn' helper function)
                             distance[i][j] = advanceBurn(veg[i][j], cell_transition, distance[i][j], del_t)
@@ -123,22 +123,46 @@ for n in range(N):
         zeroSpread = np.sum(fire) == np.sum(tempFire) # there is zero spread of fire when the total percent
             # on fire of all cells is equal between the previous time step and current time step
         fire = copy.deepcopy(tempFire) # update fire matrix 
-        fire_timeline = np.insert(fire_timeline, count, tempFire, axis=2) # store fire status into timeline matrix
         fireBorder = copy.deepcopy(tempFireBorder) # update fire border
         wind_speed, wind_direction = updateWind(wind_speed, wind_direction) # update the wind speed and direction across all cells based for next time step based on current time step
-
-    # show results in map
-    showResults(fire, veg)
-
+        
     # Store simulation results
-    # Total area burned (m^2)
-    totBurnArea.append(np.sum(fire) * 900)
-    print(totBurnArea)
+    totBurnArea.append((np.sum(fire) * 900)/1000) # Total area burned (m^2 * 10^-3)
+    burnTime.append(t) # Total burn time 
+    totLinesBuilt.append((linesBuilt * 30)/1000) # Total fire lines built (m * 10^-3)
+    cumulativeFire = np.add(cumulativeFire, fire) # Add to cumulative burn
 
-    # Total burn time 
-    burnTime.append(t)
-    print(burnTime)
+    print("Replication " + str(n+1) + ": " + str(t) + " hours to burn " + str(np.sum(fire) * 900) +" square meters")
     
 
 # Finish
-print("Simulation Complete")    
+# Generate empirical CDFs
+fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
+y = np.linspace(1/N, 1, num=N)
+x1 = np.sort(totBurnArea)
+ax1.scatter(x1, y)
+ax1.set_title('Total Area Burned (squared meters * 10^-3)')
+x2 = np.sort(burnTime)
+ax2.scatter(x2, y)
+ax2.set_title('Total Burn Time (hours)')
+x3 = np.sort(totLinesBuilt)
+ax3.scatter(x2, y)
+ax3.set_title('Fire Lines Built (squared meters * 10^-3)')
+veg = np.floor_divide(map[0], np.ones([np.size(map, 1), np.size(map, 2)], dtype=int)*100)
+rgbIMG = np.zeros([np.size(veg, 0), np.size(veg, 1), 3], dtype=int)
+r = np.add(np.add(np.where(veg == 1, 56, 0), np.where(veg == 2, 147, 0)), np.where(veg == 3, 219, 0))
+g = np.add(np.add(np.where(veg == 1, 118, 0), np.where(veg == 2, 196, 0)), np.where(veg == 3, 235, 0))
+b = np.add(np.add(np.where(veg == 1, 29, 0), np.where(veg == 2, 125, 0)), np.where(veg == 3, 118, 0))
+vegRGB = np.dstack((r, g, b))
+ax4.imshow(vegRGB)
+alphaMat = np.ceil(cumulativeFire / N)
+cumulativeFire[cumulativeFire==0]=['nan']
+ax4.imshow(cumulativeFire, cmap='autumn_r')
+ax4.set_title('Burn Map')
+plt.show()
+
+print("Burn Area -- Average: " + str(np.average(totBurnArea)) + " thousand square meters")
+print("Burn Time -- Average: " + str(np.average(burnTime)) + " hours")
+print("Fire Lines Built -- Average: " + str(np.average(totLinesBuilt)) + " meters")  
+
+

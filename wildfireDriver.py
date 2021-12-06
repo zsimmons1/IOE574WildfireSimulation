@@ -10,10 +10,11 @@ from array import array
 import math
 from wildfireHelpers import *
 import copy
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 # Initialize simulation tracking variables
 # N is the number of replications to run
-N = 50
+N = 5
 # totBurnArea is the total area burned before fire containment
 totBurnArea = []
 # burnTime is the total burn time (in hours) of the fire before containment
@@ -88,10 +89,10 @@ for n in range(N):
         
         # Draw all primary fire lines as soon as t == responseTime
         if t == responseTime: 
-            buildProactiveLines(i, j, contained, veg, primaryBuffer, breachProb, tempFireBorder, fireLineShape, spokes, linesBuilt)
+            buildProactiveLines(i, j, contained, veg, primaryBuffer, breachProb, tempFireBorder, fireLineShape, spokes)
             # This will be used as either the radius or the new upper/lower bounds for the contingency lines
             if concentricContingency:
-                buildProactiveLines(i, j, contained, veg, contingencyBuffer, breachProb, tempFireBorder, fireLineShape, spokes, linesBuilt)
+                buildProactiveLines(i, j, contained, veg, contingencyBuffer, breachProb, tempFireBorder, fireLineShape, spokes)
 
         # traverse the rectangular border around the fire edge plus one cell on each side
         for i in range(fireBorder[0] - 1, fireBorder[1] + 2): # i is latitutde index
@@ -104,7 +105,7 @@ for n in range(N):
                             # determine if the cell is newly ignited and a fire line breach
                             if (fire[i][j] == 0) and (np.sum(cell_transition) > 0 and contained[i][j]== -1):
                                 # if so, build a response line!
-                                buildResponseLine(i,j, contained, veg, responseRadius, breachProb, fireLineShape, linesBuilt)    
+                                linesBuilt += buildResponseLine(i,j, contained, veg, responseRadius, breachProb, fireLineShape)    
                             # determine the amount of spread from each neighbor which has ignitied cell i,j
                                 # (see 'advanceBurn' helper function)
                             distance[i][j] = advanceBurn(veg[i][j], cell_transition, distance[i][j], del_t)
@@ -157,7 +158,9 @@ vegRGB = np.dstack((r, g, b))
 ax4.imshow(vegRGB)
 alphaMat = np.ceil(cumulativeFire / N)
 cumulativeFire[cumulativeFire==0]=['nan']
-ax4.imshow(cumulativeFire, cmap='autumn_r')
+plot4 = ax4.imshow(cumulativeFire, cmap='autumn_r')
+cbar = plt.colorbar(plot4, ax = ax4, orientation='vertical')
+cbar.set_label('# of replications burned')
 ax4.set_title('Burn Map')
 plt.show()
 

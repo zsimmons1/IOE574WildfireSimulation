@@ -181,25 +181,24 @@ def rectangleLine(veg, fireLineBounds, contained, breachProb):
         if contained[i][cL] == 0: # if the potential West fire line is not already contained
             if breachFireLine(breachProb) == False: veg[i][cL] = 4 
             else: contained[i][cL] = -1
-            newLinesBuilt = newLinesBuilt + 1 
+            newLinesBuilt += 1 
         if contained[i][cU] == 0: # if the potential East fire line is not already contained 
             if breachFireLine(breachProb) == False: veg[i][cU] = 4 
             else: contained[i][cU] = -1
-            newLinesBuilt = newLinesBuilt + 1    
+            newLinesBuilt += 1    
     for j in range(cL, cU+1): # Build horizontal fire lines
         if contained[rL][j] == 0: # if the potential North fire line is not already contained
             if breachFireLine(breachProb) == False: veg[rL][j] = 4 
             else: contained[rL][j] = -1
-            newLinesBuilt = newLinesBuilt + 1 
+            newLinesBuilt += 1 
         if contained[rU][j] == 0: # if the potential South fire line is not already contained   
             if breachFireLine(breachProb) == False: veg[rU][j] = 4 
             else: contained[rU][j] = -1
-            newLinesBuilt = newLinesBuilt + 1       
+            newLinesBuilt += 1       
     # Create the contained zone from the new fire line
     for i in range(rL+1, rU):
         for j in range(cL+1, cU):
-            contained[i][j] = 1      
-    
+            contained[i][j] = 1            
     return newLinesBuilt
 
 
@@ -245,7 +244,7 @@ def circularLines(veg, fireLineBounds, contained, breachProb):
                         newLinesBuilt += 1     
                     else:
                         contained[i][j] = 1        
-    return 0
+    return newLinesBuilt
 
 def addSpokes(veg, fireLineBounds, contained, breachProb):
     # Unpack fire line bounds which will help calculate the radius of the circle
@@ -316,12 +315,12 @@ def buildProactiveLines(i, j, contained, veg, buffer, breachProb, tempFireBorder
     cU = tempFireBorder[3] + buffer # column upper bound (eastmost)
     # check the fireLineShape and call the appropriate helper function
     if fireLineShape == "rectangle":
-        rectangleLine(veg, [rL, rU, cL, cU], contained, breachProb) 
+        newLinesBuilt = rectangleLine(veg, [rL, rU, cL, cU], contained, breachProb) 
         if spokes == True: addSpokes(veg, [rL, rU, cL, cU], contained, breachProb)
     elif fireLineShape == "circle":
-        circularLines(veg, [rL, rU, cL, cU], contained, breachProb)
+        newLinesBuilt = circularLines(veg, [rL, rU, cL, cU], contained, breachProb)
         if spokes == True: addSpokes(veg, [rL-3, rU+3, cL-3, cU+3], contained, breachProb)
-    return 0    
+    return newLinesBuilt   
 
 # buildResponseLine:
     # 'i' is the latitude index of the cell where the fire line was breached
@@ -331,25 +330,26 @@ def buildProactiveLines(i, j, contained, veg, buffer, breachProb, tempFireBorder
     # 'responseRadius' is the radius of the squre of the reponse line
     # 'breachProb' is the probability that any fire will jump a fire line
 def buildResponseLine(i, j, contained, veg, responseRadius, breachProb, fireLineShape):
-        # Setting the x,y lower and upper bounds for the fire line boarder to ensure they do not exceed the 
-            # bounds of the map
-        # left fire line boundary
-        if i - responseRadius < 0: rL = 0
-        else: rL = i - responseRadius
-        # right fire line boundary
-        if i + responseRadius > np.size(veg, 0)-1: rU = 0
-        else: rU = i + responseRadius 
-        # lower fire line boundary
-        if j - responseRadius < 0: cL = 0
-        else: cL = j - responseRadius         
-        # upper fire line boundary
-        if j + responseRadius > np.size(veg, 1)-1: cU = 0
-        else: cU = j + responseRadius      
-        # check the fireLineShape and call the appropriate helper function
-        if fireLineShape == "rectangle":
-            rectangleLine(veg, [rL, rU, cL, cU], contained, breachProb) 
-        elif fireLineShape == "circle":
-            circularLines(veg, [rL, rU, cL, cU], contained, breachProb) 
+    # Setting the x,y lower and upper bounds for the fire line boarder to ensure they do not exceed the 
+        # bounds of the map
+    # left fire line boundary
+    if i - responseRadius < 0: rL = 0
+    else: rL = i - responseRadius
+    # right fire line boundary
+    if i + responseRadius > np.size(veg, 0)-1: rU = 0
+    else: rU = i + responseRadius 
+    # lower fire line boundary
+    if j - responseRadius < 0: cL = 0
+    else: cL = j - responseRadius         
+    # upper fire line boundary
+    if j + responseRadius > np.size(veg, 1)-1: cU = 0
+    else: cU = j + responseRadius      
+    # check the fireLineShape and call the appropriate helper function
+    if fireLineShape == "rectangle":
+        newLinesBuilt = rectangleLine(veg, [rL, rU, cL, cU], contained, breachProb) 
+    elif fireLineShape == "circle":
+        newLinesBuilt = circularLines(veg, [rL, rU, cL, cU], contained, breachProb) 
+    return newLinesBuilt
 
 # showResults: Plots the map of the area pre-burn and post-burn
     # 'fire' is a 2D matrix containing the percentage on fire of each cell on the map

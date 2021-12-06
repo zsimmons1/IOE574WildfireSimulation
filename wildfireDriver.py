@@ -8,9 +8,8 @@ import rasterio
 from rasterio.plot import show
 from array import array
 import math
-from wildfireHelpers import *
 import copy
-from mpl_toolkits.axes_grid1 import make_axes_locatable
+from wildfireHelpers import *
 
 # Initialize simulation tracking variables
 # N is the number of replications to run
@@ -23,47 +22,45 @@ burnTime = []
 totLinesBuilt = []
 # linesEngaged is the number of cells of fire lines which engaged with the fire at any point during the simulation run
 linesEngaged = []
+metrics = (totBurnArea, burnTime, totLinesBuilt, linesEngaged)
 
 # Read data and initialize constant inputs
 # img holds the vegetation raster data from the LANDFIRE database
 img = rasterio.open('/Users/sprin/OneDrive/Desktop/IOE574/TermProject/IOE574WildfireSimulation/us_210evc.tif')
 # 'map' holds original vegetation raster data from TIFF file
 map = img.read()
-# 'den' holds the densitity of the vegetation type as a number between 0 and 100
-# TODO: 'den' is currently unused
-den = np.mod(map[0], np.ones((np.size(map, 1), np.size(map, 2)), dtype=int)*100)
 # 'cumulativeFire' is a 2D matrix containing the number of simulations in which each cell was on fire
 cumulativeFire = np.zeros((np.size(map, 1), np.size(map, 2)), dtype=float)
 
+# Initiative other input constants
+starti = 28 # 'starti' is the i index (corresponding to latitude) where the fire initiates
+startj = 24 # 'startj' is the j index (corresponding to longitude) where the fire initiates
+del_t = 0.5 # in hours, the time step between updates of the fire status
+breachProb = 0.05 # the probability that the fire jumps any given fire line
+
 # Run one replication
 for n in range(N):
+    # Establish policies
+    responseTime = 2 # the number of hours before proctive lines are planned/built
+    fireLineShape = "rectangle" # a string variable indicating whether the fire lines will be rectangular or cirucular
+    responseRadius = 4 # the number of cells away from the breach where the response lines are built
+    primaryBuffer = 4 # the number of cells away from the active fire border where the primary lines are built
+    concentricContingency = False # a boolean variable indicating if we will build a proactive concentric contingency line
+    contingencyBuffer = primaryBuffer + 3
+    spokes = False # a boolean variable indicating if we will build spokes for the contingency lines
+
     # Initialize replication-specific variables
+    t = 0 # time elapsed, in hours
+    linesBuilt = 0 # the number of fire lines built (of all types)
     # 'veg' is a 2D matrix containing the cell vegetation type as an integer (0 = unburnable, 1 = trees, 2 = shrub, 3 = herb, 4 = fire border)
     veg = np.floor_divide(map[0], np.ones([np.size(map, 1), np.size(map, 2)], dtype=int)*100)
     # 'fire' is a 2D matrix containing the percentage on fire of each cell on the map
     fire = np.zeros((np.size(map, 1), np.size(map, 2)), dtype=float)
     # contained is a 2D matrix containing the status of the cell's containment (1 if is is within a fire-line, 0 otherwise)
     contained = np.zeros((np.size(map, 1), np.size(map, 2)), dtype=float)
-    # igniteTime is a 2D matrix containing the time (in hours) during which each cell ignites
-    igniteTime = np.zeros((np.size(map, 1), np.size(map, 2)), dtype=float)
-    # fullBurnTime is a 2D matrix containing the time (in hours) during which the cell reaches 100% on fire
-    fullburnTime = np.zeros((np.size(map, 1), np.size(map, 2)), dtype=float)
     # 'distance' is a 3D matrix containing the distance of fire spread for each cell from each neighboring cell
     distance = np.zeros((np.size(map, 1), np.size(map, 2), 8), dtype=float)
-    starti = 28 # 'starti' is the i index (corresponding to latitude) where the fire initiates
-    startj = 24 # 'startj' is the j index (corresponding to longitude) where the fire initiates
-    t = 0 # time elapsed, in hours
-    del_t = 0.5 # in hours, the time step between updates of the fire status
-    breachProb = 0.05 # the probability that the fire jumps any given fire line
-    primaryBuffer = 4 # the number of cells away from the active fire border where the primary lines are built
-    responseRadius = 3 # the number of cells away from the breach where the fire line will be built
-    responseTime = 2 # the number of hours before initial contingency lines are built
-    concentricContingency = False # a boolean variable indicating if we will build a proactive concentric contingency line
-    fireLineShape = "rectangle" # a string variable indicating whether the fire lines will be rectangular or cirucular
-    contingencyBuffer = primaryBuffer + 3
-    spokes = False
-    linesBuilt = 0
-
+    
     # Ignite the fire
     fire[starti][startj] = 1 # Start fire at location 28, 24 with cell 100% on fire
     fireBorder = [starti, starti, startj, startj] # [x_lower_bound, x_upper_bound, y_lower_bound, y_upper_bound]
@@ -130,7 +127,7 @@ for n in range(N):
     # Store simulation results
     totBurnArea.append((np.sum(fire) * 900)/1000) # Total area burned (m^2 * 10^-3)
     burnTime.append(t) # Total burn time 
-    totLinesBuilt.append((linesBuilt * 30)/1000) # Total fire lines built (m * 10^-3)
+    totLinesBuilt.append((linesBuilt * 30)) # Total fire lines built (m)
     cumulativeFire = np.add(cumulativeFire, fire) # Add to cumulative burn
 
     print("Replication " + str(n+1) + ": " + str(t) + " hours to burn " + str(np.sum(fire) * 900) +" square meters")
@@ -147,8 +144,8 @@ x2 = np.sort(burnTime)
 ax2.scatter(x2, y)
 ax2.set_title('Total Burn Time (hours)')
 x3 = np.sort(totLinesBuilt)
-ax3.scatter(x2, y)
-ax3.set_title('Fire Lines Built (squared meters * 10^-3)')
+ax3.scatter(x3, y)
+ax3.set_title('Fire Lines Built (meters)')
 veg = np.floor_divide(map[0], np.ones([np.size(map, 1), np.size(map, 2)], dtype=int)*100)
 rgbIMG = np.zeros([np.size(veg, 0), np.size(veg, 1), 3], dtype=int)
 r = np.add(np.add(np.where(veg == 1, 56, 0), np.where(veg == 2, 147, 0)), np.where(veg == 3, 219, 0))

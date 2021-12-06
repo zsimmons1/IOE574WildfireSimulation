@@ -50,7 +50,7 @@ def updateWind(wind_speed, wind_direction):
     # 'wind_speed' is the wind speed (in km/hour) across all cells for the current time period
     # 'wind_direction' is the angle (in degrees, where East is 0 degrees) of the wind across all cells for the 
         # current time step
-def igniteCell(fire, i, j, distance, wind_speed, wind_direction):
+def igniteCell(fire, i, j, distance, wind_speed, wind_direction, cellTransitionProbs, c):
     cell_transition = [0, 0, 0, 0, 0, 0, 0, 0]
     spread_angles = [315, 270, 225, 0, 180, 45, 90, 135]
     # Set baseline spread probability for each neighbor as the percent on fire of that neighbor
@@ -79,12 +79,13 @@ def igniteCell(fire, i, j, distance, wind_speed, wind_direction):
             if spread_prob[k] > 1:
                 spread_prob[k] = 1
             # Draw from uniform distribution to determine if neighbor k will spread to cell i,j  
-            u = np.random.uniform(0,1)   
+            u = cellTransitionProbs[c] 
+            c += 1 
             if u < spread_prob[k]:
                 cell_transition[k] = 1          
             # Else, neighbor k does not contribute to the fire in cell i,j, so 'cell_transition[k]' remains 0
     # Return the cell_transition and spread_prob
-    return cell_transition, spread_prob
+    return cell_transition, spread_prob, c
 
 # advanceBurn: Determine the distance of spread of the fire from each contributing neighbor to cell i,j. These
 # distances are determined from the previous distance and velocity of fire spread sampled from a Weibull distribution
@@ -96,7 +97,7 @@ def igniteCell(fire, i, j, distance, wind_speed, wind_direction):
     # 'distance' is the 8-element vector of spread distances (from the last time period) from each neighbor 
         # from the 3-D distance matrix at cell i,j  
     # 'del_t' is the size of each time step
-def advanceBurn(veg, cell_transition, distance, del_t):
+def advanceBurn(veg, cell_transition, distance, del_t, allRates, rateCounts):
     # shape stores the Weibull distribution shape for each vegetation type
     shape = [11.4, 13.6, 13.0, 0]        
     orthogonal = [1, 3, 4, 6]
@@ -107,7 +108,8 @@ def advanceBurn(veg, cell_transition, distance, del_t):
         if shape[veg-1] == 0:
             distance[x] = 0
         if cell_transition[x] == 1 and shape[veg-1] != 0:
-            del_x = math.pow(10, np.random.weibull(shape[veg-1]))*del_t
+            del_x = math.pow(10, allRates[veg-1][rateCounts[veg-1]])*del_t
+            rateCounts[veg-1] += 1
             if distance[x] + del_x > 30:
                 distance[x] = 30
             else: 
@@ -123,7 +125,7 @@ def advanceBurn(veg, cell_transition, distance, del_t):
                 distance[x] = 30*pow(2, 0.5)
             else: 
                 distance[x] += del_x
-    return distance
+    return distance, rateCounts
 
 # spreadFire: Calculates the area of burn in cell i,j resulting from the spread distance in each direction and the 
 # intensity of spread in each direction. Area of spread is then used to calculate total proportion of 

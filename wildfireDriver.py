@@ -43,11 +43,36 @@ windDirs = []
 for n in range(N):
     windSpeeds.append(initializeWind())
     windDirs.append(0) # TODO: Sample wind_direction from data too?
+print("windSpeeds and windDirs initialized")
 
-# Initialize enough breach probabilities for all replications
+# Initialize enough breach probabilities for each replications
 breachProbs = []
 for i in range(1000):
     breachProbs.append(np.random.uniform())
+print("breachProbs initialized")
+
+# Initialize enough cellTransitionProbs for each replication  
+cellTransitionProbs = []
+for i in range(999999):
+    cellTransitionProbs.append(np.random.uniform())
+print("cellTransitionProbs initialized")
+
+# Initialize enough spreadRates for each vegetation type for each replication
+shape = [11.4, 13.6, 13.0, 0] 
+# trees
+treeRates = []
+for i in range(10000):
+    treeRates.append(np.random.weibull(11.4))
+# shrubs
+shrubRates = []
+for i in range(10000):
+    shrubRates.append(np.random.weibull(13.6)) 
+# herbs
+herbRates = []
+for i in range(10000):
+    herbRates.append(np.random.weibull(13.0))        
+allRates = [treeRates, shrubRates, herbRates]
+print("allRates initialized")
 
 # Run one replication
 for n in range(N):
@@ -64,6 +89,15 @@ for n in range(N):
     t = 0 # time elapsed, in hours
     linesBuilt = 0 # the number of fire lines built (of all types)
     int(linesBuilt)
+    c = 0 # the number of cellTransitionProbs drawn
+    int(c)
+    tSpread = 0 # the number of spread rates sampled for trees
+    int(tSpread)
+    sSpread = 0 # the number of spread rates sampled for shurbs
+    int(sSpread)
+    hSpread = 0 # the number of spread rates sampled for herbs
+    int(hSpread)
+    rateCounts = [tSpread, sSpread, hSpread]
     # 'veg' is a 2D matrix containing the cell vegetation type as an integer (0 = unburnable, 1 = trees, 2 = shrub, 3 = herb, 4 = fire border)
     veg = np.floor_divide(map[0], np.ones([np.size(map, 1), np.size(map, 2)], dtype=int)*100)
     # 'fire' is a 2D matrix containing the percentage on fire of each cell on the map
@@ -96,7 +130,6 @@ for n in range(N):
         # Draw all proactive fire lines as soon as t == responseTime
         if t == responseTime: 
             linesBuilt = buildProactiveLines(i, j, contained, veg, primaryBuffer, breachProbs, linesBuilt, breachProb, tempFireBorder, fireLineShape, spokes)
-            show(contained, cmap='Blues')
             # If the policy calls for contingency lines, draw contigency lines
             if concentricContingency:
                 linesBuilt = buildProactiveLines(i, j, contained, veg, contingencyBuffer, linesBuilt, breachProbs, breachProb, tempFireBorder, fireLineShape, spokes)
@@ -108,14 +141,14 @@ for n in range(N):
                     if j < np.size(fire, 1)-1: # ensure cell is in longitude bounds of map
                         if (veg[i][j]!=0) and (fire[i][j]!=1 and veg[i][j]!=4): # skip all unburnable cells or all completely on fire cells                        
                             # determine which neighbors to spread fire from (see 'ignite' helper function)  
-                            cell_transition, spread_prob  = igniteCell(fire, i, j, distance[i][j], wind_speed, wind_direction)
+                            cell_transition, spread_prob, c  = igniteCell(fire, i, j, distance[i][j], wind_speed, wind_direction, cellTransitionProbs, c)
                             # determine if the cell is newly ignited and a fire line breach
                             if (fire[i][j] == 0) and (np.sum(cell_transition) > 0 and contained[i][j]== -1):
                                 # if so, build a response line!
                                 linesBuilt = buildResponseLine(i,j, contained, veg, responseRadius, breachProbs, linesBuilt, breachProb, fireLineShape)    
                             # determine the amount of spread from each neighbor which has ignitied cell i,j
                                 # (see 'advanceBurn' helper function)
-                            distance[i][j] = advanceBurn(veg[i][j], cell_transition, distance[i][j], del_t)
+                            distance[i][j], rateCounts = advanceBurn(veg[i][j], cell_transition, distance[i][j], del_t, allRates, rateCounts)
                             # calculate the total percentage on fire for cell i,j based on contributions from
                                 # all neighbors (see 'spreadFire' helper function)
                             tempFire[i][j] = spreadFire(distance[i][j], spread_prob)
@@ -139,7 +172,7 @@ for n in range(N):
     burnTime.append(t) # Total burn time 
     totLinesBuilt.append((linesBuilt * 30)) # Total fire lines built (m)
     cumulativeFire = np.add(cumulativeFire, fire) # Add to cumulative burn
-
+    showOneRep(fire, veg)
     print("Replication " + str(n+1) + ": " + str(t) + " hours to burn " + str(np.sum(fire) * 900) +" square meters")
     
 

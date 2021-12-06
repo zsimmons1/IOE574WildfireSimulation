@@ -155,9 +155,8 @@ def spreadFire(distance, spread_prob):
 # breachFireLine: Determines whether any given fire line will be breached based on a uniform random probability
     # 'breachProb' is the probability that a fire line will be breached (independent of any characteristics of
         # the fire)
-def breachFireLine(breachProb):
-    new_number = random.random()
-    if new_number > (1-breachProb):
+def breachFireLine(breachProbs, linesBuilt, breachProb):
+    if breachProbs[linesBuilt] > (1-breachProb):
         return True
     else:
         return False
@@ -168,46 +167,46 @@ def breachFireLine(breachProb):
     # 'contained' is a 2D matrix containing the status of the cell's containment 
     #   (1 if is is within a fire-line, 0 otherwise)
     # 'breachProb' is the probability that the fire jumps any given fire line
-def rectangleLine(veg, fireLineBounds, contained, breachProb):
+def rectangleLine(veg, fireLineBounds, contained, breachProbs, linesBuilt, breachProb):
     # Unpack fire line bounds
     rL = fireLineBounds[0] # row lower bound (northmost)
     rU = fireLineBounds[1] # row upper bound (southmost)
     cL = fireLineBounds[2] # column lower bound (westmost)
     cU = fireLineBounds[3] # column upper bound (eastmost)
 
-    newLinesBuilt = 0
+    # newLinesBuilt = 0
     # Set the vegitation type to 4 for the fire lines
     for i in range(rL, rU+1): # Build vertical fire lines
         if contained[i][cL] == 0: # if the potential West fire line is not already contained
-            if breachFireLine(breachProb) == False: veg[i][cL] = 4 
+            if breachFireLine(breachProbs, linesBuilt, breachProb) == False: veg[i][cL] = 4 
             else: contained[i][cL] = -1
-            newLinesBuilt += 1 
+            linesBuilt += 1 
         if contained[i][cU] == 0: # if the potential East fire line is not already contained 
-            if breachFireLine(breachProb) == False: veg[i][cU] = 4 
+            if breachFireLine(breachProbs, linesBuilt, breachProb) == False: veg[i][cU] = 4 
             else: contained[i][cU] = -1
-            newLinesBuilt += 1    
+            linesBuilt += 1    
     for j in range(cL, cU+1): # Build horizontal fire lines
         if contained[rL][j] == 0: # if the potential North fire line is not already contained
-            if breachFireLine(breachProb) == False: veg[rL][j] = 4 
+            if breachFireLine(breachProbs, linesBuilt, breachProb) == False: veg[rL][j] = 4 
             else: contained[rL][j] = -1
-            newLinesBuilt += 1 
+            linesBuilt += 1 
         if contained[rU][j] == 0: # if the potential South fire line is not already contained   
-            if breachFireLine(breachProb) == False: veg[rU][j] = 4 
+            if breachFireLine(breachProbs, linesBuilt, breachProb) == False: veg[rU][j] = 4 
             else: contained[rU][j] = -1
-            newLinesBuilt += 1       
+            linesBuilt += 1       
     # Create the contained zone from the new fire line
     for i in range(rL+1, rU):
         for j in range(cL+1, cU):
             contained[i][j] = 1            
-    return newLinesBuilt
+    return linesBuilt
 
 
 def distCalculator(x1, y1, x2, y2):
     dist = ((x2 - x1)**(2) + (y2-y1)**(2))**(0.5)
     return dist
 
-def circularLines(veg, fireLineBounds, contained, breachProb):
-    newLinesBuilt = 0
+def circularLines(veg, fireLineBounds, contained, breachProbs, linesBuilt, breachProb):
+    # newLinesBuilt = 0
     # Unpack fire line bounds which will help calculate the radius of the circle
     rL = fireLineBounds[0]
     rU = fireLineBounds[1]
@@ -237,16 +236,16 @@ def circularLines(veg, fireLineBounds, contained, breachProb):
                 currDist = distCalculator(rC, cC, i, j)
                 if currDist - 1.5 < rad:
                     if rad <= currDist:
-                        if breachFireLine(breachProb) == False:
+                        if breachFireLine(breachProbs, linesBuilt, breachProb) == False:
                             veg[i][j] = 4
                         else:
                             contained[i][j] = -1   
-                        newLinesBuilt += 1     
+                        # newLinesBuilt += 1     
                     else:
                         contained[i][j] = 1        
-    return newLinesBuilt
+    return linesBuilt
 
-def addSpokes(veg, fireLineBounds, contained, breachProb):
+def addSpokes(veg, fireLineBounds, contained, breachProbs, linesBuilt, breachProb):
     # Unpack fire line bounds which will help calculate the radius of the circle
     rL = fireLineBounds[0]
     rU = fireLineBounds[1]
@@ -283,18 +282,18 @@ def addSpokes(veg, fireLineBounds, contained, breachProb):
     for i in range(rL, rU + 1):
         for j in range(cL, cU + 1):            
             if i == int(j*slope1)+b1:
-                if breachFireLine(breachProb) == False:
+                if breachFireLine(breachProbs, linesBuilt, breachProb) == False:
                     veg[i][j] = 4
                     veg[i+1][j] = 4
             if i == int(j*slope2)+b2:
-                if breachFireLine(breachProb) == False:
+                if breachFireLine(breachProbs, linesBuilt, breachProb) == False:
                     veg[i][j] = 4
                     veg[i + 1][j] = 4
             if i == rC:
-                if breachFireLine(breachProb) == False:
+                if breachFireLine(breachProbs, linesBuilt, breachProb) == False:
                     veg[rC][j] = 4
             if j == cC:
-                if breachFireLine(breachProb) == False:
+                if breachFireLine(breachProbs, linesBuilt, breachProb) == False:
                     veg[i][cC] = 4
 
     return 0
@@ -305,9 +304,9 @@ def addSpokes(veg, fireLineBounds, contained, breachProb):
     # 'contained' is a 2D matrix containing the status of the cell's containment 
     # 'veg' is a 2D matrix containing the cell vegetation type as an integer (4 indicates an unbreached fire border)
     # 'fireBuffer' is the number of cells between the active fire border and location of primary fire line
-    # 'breachProb' is the probability that any fire will jump a fire line
+    # 'breachProbs' is the probability that any fire will jump a fire line
     # 'tempFireBorder' is the current position of the active fire border in each direction
-def buildProactiveLines(i, j, contained, veg, buffer, breachProb, tempFireBorder, fireLineShape, spokes):
+def buildProactiveLines(i, j, contained, veg, buffer, breachProbs, linesBuilt, breachProb, tempFireBorder, fireLineShape, spokes):
     # Setting the x,y lower and upper bounds for the fire line boarder
     rL = tempFireBorder[0] - buffer # row lower bound (northmost)
     rU = tempFireBorder[1] + buffer # row upper bound (southmost)
@@ -315,12 +314,12 @@ def buildProactiveLines(i, j, contained, veg, buffer, breachProb, tempFireBorder
     cU = tempFireBorder[3] + buffer # column upper bound (eastmost)
     # check the fireLineShape and call the appropriate helper function
     if fireLineShape == "rectangle":
-        newLinesBuilt = rectangleLine(veg, [rL, rU, cL, cU], contained, breachProb) 
-        if spokes == True: addSpokes(veg, [rL, rU, cL, cU], contained, breachProb)
+        linesBuilt = rectangleLine(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb) 
+        if spokes == True: addSpokes(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb)
     elif fireLineShape == "circle":
-        newLinesBuilt = circularLines(veg, [rL, rU, cL, cU], contained, breachProb)
-        if spokes == True: addSpokes(veg, [rL-3, rU+3, cL-3, cU+3], contained, breachProb)
-    return newLinesBuilt   
+        circularLines(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb)
+        if spokes == True: addSpokes(veg, [rL-3, rU+3, cL-3, cU+3], contained, breachProbs, linesBuilt, breachProb)
+    return linesBuilt   
 
 # buildResponseLine:
     # 'i' is the latitude index of the cell where the fire line was breached
@@ -329,7 +328,7 @@ def buildProactiveLines(i, j, contained, veg, buffer, breachProb, tempFireBorder
     # 'veg' is a 2D matrix containing the cell vegetation type as an integer (4 indicates an unbreached fire border)
     # 'responseRadius' is the radius of the squre of the reponse line
     # 'breachProb' is the probability that any fire will jump a fire line
-def buildResponseLine(i, j, contained, veg, responseRadius, breachProb, fireLineShape):
+def buildResponseLine(i, j, contained, veg, responseRadius, breachProbs, linesBuilt, breachProb, fireLineShape):
     # Setting the x,y lower and upper bounds for the fire line boarder to ensure they do not exceed the 
         # bounds of the map
     # left fire line boundary
@@ -346,15 +345,15 @@ def buildResponseLine(i, j, contained, veg, responseRadius, breachProb, fireLine
     else: cU = j + responseRadius      
     # check the fireLineShape and call the appropriate helper function
     if fireLineShape == "rectangle":
-        newLinesBuilt = rectangleLine(veg, [rL, rU, cL, cU], contained, breachProb) 
+        rectangleLine(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb) 
     elif fireLineShape == "circle":
-        newLinesBuilt = circularLines(veg, [rL, rU, cL, cU], contained, breachProb) 
-    return newLinesBuilt
+        circularLines(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb) 
+    return linesBuilt
 
-# showResults: Plots the map of the area pre-burn and post-burn
+# showOneRep: Plots the map of the area pre-burn and post-burn
     # 'fire' is a 2D matrix containing the percentage on fire of each cell on the map
     # 'veg' is a 2D matrix containing the cell vegetation type as an integer (0 = unburnable, 1 = trees, 2 = shrub, 3 = herb)
-def showResults(fire, veg):
+def showOneRep(fire, veg):
     # Build pre-burn landscape image
     rgbIMG = np.zeros([np.size(veg, 0), np.size(veg, 1), 3], dtype=int)
     r = np.add(np.add(np.where(veg == 1, 56, 0), np.where(veg == 2, 147, 0)), np.where(veg == 3, 219, 0))
@@ -379,109 +378,3 @@ def showResults(fire, veg):
     ax2.legend(handles = ax2legendElements, bbox_to_anchor=(1.5, 1.0), loc='upper right')
     plt.show()
     return 0
-
-# TODO: debug, re-write, or discard
-# showTimeline:
-def showTimeline(fire_timeline, veg):
-    # Build pre-burn landscape image
-    rgbIMG = np.zeros([np.size(veg, 0), np.size(veg, 1), 3], dtype=int)
-    r = np.add(np.add(np.where(veg == 1, 56, 0), np.where(veg == 2, 147, 0)), np.where(veg == 3, 219, 0))
-    g = np.add(np.add(np.where(veg == 1, 118, 0), np.where(veg == 2, 196, 0)), np.where(veg == 3, 235, 0))
-    b = np.add(np.add(np.where(veg == 1, 29, 0), np.where(veg == 2, 125, 0)), np.where(veg == 3, 118, 0))
-    rgbIMG = np.dstack((r, g, b))
-    fires = np.zeros((20, np.size(fire_timeline, 0), np.size(fire_timeline, 1)), dtype=int)
-    for i in range(20):
-        # Overlay burn
-        new_r = np.where(fire_timeline[i] > 0, 255, r)
-        new_g = np.where(fire_timeline[i] > 0, 0, g)
-        new_b = np.where(fire_timeline[i] > 0, 0, b)
-        fires[i] = np.dstack((new_r, new_g, new_b))
-        # Create custom legends
-        ax2legendElements = [lines.Line2D([0], [0], marker='o', color='w', label='Fire', markerfacecolor='#ff0000', markersize=10),
-                            lines.Line2D([0], [0], marker='o', color='w', label='Tree', markerfacecolor='#38761d', markersize=10), 
-                            lines.Line2D([0], [0], marker='o', color='w', label='Shrub', markerfacecolor='#93c47d', markersize=10), 
-                            lines.Line2D([0], [0], marker='o', color='w', label='Herb', markerfacecolor='#dbeb76', markersize=10),
-                            lines.Line2D([0], [0], marker='o', color='w', label='Fire Line', markerfacecolor='#333000', markersize=10)]
-    # Plot figures
-    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
-    ax1.imshow(rgbIMG)
-    ax2.imshow(fires[0])
-    ax3.imshow(fires[1])
-    ax4.imshow(fires[2])
-    ax2.legend(handles = ax2legendElements, bbox_to_anchor=(1.5, 1.0), loc='upper right')
-    plt.show()
-    show(fire, cmap='Reds')
-    return 0
-
-# midPointCircleDraw: 
-# Source: https://www.geeksforgeeks.org/mid-point-circle-drawing-algorithm/
-    # 'x_centre' 
-    # 'y_centre'
-    # 'r' is the radius of the circle
-def midPointCircleDraw(x_centre, y_centre, r):
-    x = r
-    y = 0
-     
-    # Printing the initial point the
-    # axes after translation
-    print("(", x + x_centre, ", ",
-               y + y_centre, ")",
-               sep = "", end = "")
-     
-    # When radius is zero only a single
-    # point be printed
-    if (r > 0) :
-     
-        print("(", x + x_centre, ", ",
-                  -y + y_centre, ")",
-                  sep = "", end = "")
-        print("(", y + x_centre, ", ",
-                   x + y_centre, ")",
-                   sep = "", end = "")
-        print("(", -y + x_centre, ", ",
-                    x + y_centre, ")", sep = "")
-     
-    # Initialising the value of P
-    P = 1 - r
- 
-    while x > y:
-     
-        y += 1
-         
-        # Mid-point inside or on the perimeter
-        if P <= 0:
-            P = P + 2 * y + 1
-             
-        # Mid-point outside the perimeter
-        else:        
-            x -= 1
-            P = P + 2 * y - 2 * x + 1
-         
-        # All the perimeter points have
-        # already been printed
-        if (x < y):
-            break
-         
-        # Printing the generated point its reflection
-        # in the other octants after translation
-        print("(", x + x_centre, ", ", y + y_centre,
-                            ")", sep = "", end = "")
-        print("(", -x + x_centre, ", ", y + y_centre,
-                             ")", sep = "", end = "")
-        print("(", x + x_centre, ", ", -y + y_centre,
-                             ")", sep = "", end = "")
-        print("(", -x + x_centre, ", ", -y + y_centre,
-                                        ")", sep = "")
-         
-        # If the generated point on the line x = y then
-        # the perimeter points have already been printed
-        if x != y:
-         
-            print("(", y + x_centre, ", ", x + y_centre,
-                                ")", sep = "", end = "")
-            print("(", -y + x_centre, ", ", x + y_centre,
-                                 ")", sep = "", end = "")
-            print("(", y + x_centre, ", ", -x + y_centre,
-                                 ")", sep = "", end = "")
-            print("(", -y + x_centre, ", ", -x + y_centre,
-                                            ")", sep = "")

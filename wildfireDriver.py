@@ -22,7 +22,6 @@ burnTime = []
 totLinesBuilt = []
 # linesEngaged is the number of cells of fire lines which engaged with the fire at any point during the simulation run
 linesEngaged = []
-metrics = (totBurnArea, burnTime, totLinesBuilt, linesEngaged)
 
 # Read data and initialize constant inputs
 # img holds the vegetation raster data from the LANDFIRE database
@@ -38,6 +37,18 @@ startj = 24 # 'startj' is the j index (corresponding to longitude) where the fir
 del_t = 0.5 # in hours, the time step between updates of the fire status
 breachProb = 0.05 # the probability that the fire jumps any given fire line
 
+# Initialize wind speed and wind direction for all replications
+windSpeeds = []
+windDirs = []
+for n in range(N):
+    windSpeeds.append(initializeWind())
+    windDirs.append(0) # TODO: Sample wind_direction from data too?
+
+# Initialize enough breach probabilities for all replications
+breachProbs = []
+for i in range(1000):
+    breachProbs.append(np.random.uniform())
+
 # Run one replication
 for n in range(N):
     # Establish policies
@@ -52,6 +63,7 @@ for n in range(N):
     # Initialize replication-specific variables
     t = 0 # time elapsed, in hours
     linesBuilt = 0 # the number of fire lines built (of all types)
+    int(linesBuilt)
     # 'veg' is a 2D matrix containing the cell vegetation type as an integer (0 = unburnable, 1 = trees, 2 = shrub, 3 = herb, 4 = fire border)
     veg = np.floor_divide(map[0], np.ones([np.size(map, 1), np.size(map, 2)], dtype=int)*100)
     # 'fire' is a 2D matrix containing the percentage on fire of each cell on the map
@@ -65,17 +77,14 @@ for n in range(N):
     fire[starti][startj] = 1 # Start fire at location 28, 24 with cell 100% on fire
     fireBorder = [starti, starti, startj, startj] # [x_lower_bound, x_upper_bound, y_lower_bound, y_upper_bound]
 
-    # Initialize wind speed and wind direction
-    wind_speed = initializeWind()
-    wind_direction = 0 # TODO: Sample wind_direction from data too?
+    # Get wind speed and wind direction for this replication
+    wind_speed = windSpeeds[n]
+    wind_direction = windDirs[n]
 
-    # Spread fire and build fire lines until fire is 95% contained OR fire spreads beyond map borders(?)
-    count = -1 # 'count' tracks the number of time steps though the while loop
+    # Spread fire and build fire lines until there is zero fire spread OR fire spreads beyond map borders
     zeroSpread = False # Initially set 'zeroSpread' to False so we ititiate the while loop
     borderReached = False # Initially set 'borderReached' to False so we initiate the while loop
     while (zeroSpread == False and borderReached == False):
-        
-        count += 1 # increment the count
         t += del_t # increment time
         tempFire = copy.deepcopy(fire) # 'tempFire' is a temporary fire matrix to store new % of fire info. Use of this temp
             # matrix ensures that all fire spread depends on the state of spread in the previous time step, 
@@ -84,14 +93,15 @@ for n in range(N):
             # Use of this temp vector ensures that the nested for loops do not reach cells outside of the border
             # for the previous time step's fire (thus preventing spreading too quickly).    
         
-        # Draw all primary fire lines as soon as t == responseTime
+        # Draw all proactive fire lines as soon as t == responseTime
         if t == responseTime: 
-            buildProactiveLines(i, j, contained, veg, primaryBuffer, breachProb, tempFireBorder, fireLineShape, spokes)
-            # This will be used as either the radius or the new upper/lower bounds for the contingency lines
+            linesBuilt = buildProactiveLines(i, j, contained, veg, primaryBuffer, breachProbs, linesBuilt, breachProb, tempFireBorder, fireLineShape, spokes)
+            show(contained, cmap='Blues')
+            # If the policy calls for contingency lines, draw contigency lines
             if concentricContingency:
-                buildProactiveLines(i, j, contained, veg, contingencyBuffer, breachProb, tempFireBorder, fireLineShape, spokes)
+                linesBuilt = buildProactiveLines(i, j, contained, veg, contingencyBuffer, linesBuilt, breachProbs, breachProb, tempFireBorder, fireLineShape, spokes)
 
-        # traverse the rectangular border around the fire edge plus one cell on each side
+        # Traverse the rectangular border around the fire edge plus one cell on each side
         for i in range(fireBorder[0] - 1, fireBorder[1] + 2): # i is latitutde index
             if i < np.size(fire, 0)-1: # ensures cell is in latitute bounds of map
                 for j in range(fireBorder[2] - 1, fireBorder[3] + 2): # j is longitude index
@@ -102,7 +112,7 @@ for n in range(N):
                             # determine if the cell is newly ignited and a fire line breach
                             if (fire[i][j] == 0) and (np.sum(cell_transition) > 0 and contained[i][j]== -1):
                                 # if so, build a response line!
-                                linesBuilt += buildResponseLine(i,j, contained, veg, responseRadius, breachProb, fireLineShape)    
+                                linesBuilt = buildResponseLine(i,j, contained, veg, responseRadius, breachProbs, linesBuilt, breachProb, fireLineShape)    
                             # determine the amount of spread from each neighbor which has ignitied cell i,j
                                 # (see 'advanceBurn' helper function)
                             distance[i][j] = advanceBurn(veg[i][j], cell_transition, distance[i][j], del_t)

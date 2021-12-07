@@ -396,13 +396,8 @@ def buildProactiveLines(i, j, contained, veg, concentricContingency, primaryBuff
             if spokes == True: addSpokes(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb, fireLineShape)
             linesBuilt = rectangleLine(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb) 
         elif fireLineShape == "circle":
-<<<<<<< HEAD
-            if spokes == True: addSpokes(veg, [rL-3, rU+3, cL-3, cU+3], contained, breachProbs, linesBuilt, breachProb, fireLineShape)
-            circularLines(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb)
-=======
             linesBuilt = circularLines(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb)
             if spokes == True: addSpokes(veg, [rL-3, rU+3, cL-3, cU+3], contained, breachProbs, linesBuilt, breachProb)
->>>>>>> 8cbc121809bbc7d15234854d3d4c354bc30344f1
     return linesBuilt   
 
 # buildResponseLine:

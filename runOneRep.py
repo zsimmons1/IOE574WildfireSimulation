@@ -15,6 +15,7 @@ def runOneRep(n, responseTime, fireLineShape, responseRadius, primaryBuffer, con
     # Initialize replication-specific variables
     t = 0 # time elapsed, in hours
     linesBuilt = 0 # the number of fire lines built (of all types)
+    responseLineCounter = 0
     int(linesBuilt)
     c = 0 # the number of cellTransitionProbs drawn
     int(c)
@@ -56,7 +57,7 @@ def runOneRep(n, responseTime, fireLineShape, responseRadius, primaryBuffer, con
         
         # Draw all proactive fire lines as soon as t == responseTime
         if t == responseTime: 
-            linesBuilt = buildProactiveLines(i, j, contained, veg, concentricContingency, primaryBuffer, contingencyBuffer, breachProbs, linesBuilt, breachProb, tempFireBorder, fireLineShape, spokes)
+            linesBuilt = buildProactiveLines(i, j, contained, veg, concentricContingency, primaryBuffer, contingencyBuffer, breachProbs, linesBuilt, breachProb, tempFireBorder, fireLineShape, spokes, responseLineCounter)
             # If the policy calls for contingency lines, draw contigency lines
             # if concentricContingency:
             #     linesBuilt = buildProactiveLines(i, j, contained, veg, contingencyBuffer, linesBuilt, breachProbs, breachProb, tempFireBorder, fireLineShape, spokes)
@@ -72,7 +73,7 @@ def runOneRep(n, responseTime, fireLineShape, responseRadius, primaryBuffer, con
                             # determine if the cell is newly ignited and a fire line breach
                             if (fire[i][j] == 0) and (np.sum(cell_transition) > 0 and contained[i][j]== -1):
                                 # if so, build a response line!
-                                linesBuilt = buildResponseLine(i,j, contained, veg, responseRadius, breachProbs, linesBuilt, breachProb, fireLineShape)    
+                                linesBuilt = buildResponseLine(i,j, contained, veg, responseRadius, breachProbs, linesBuilt, breachProb, fireLineShape, responseLineCounter)    
                             # determine the amount of spread from each neighbor which has ignitied cell i,j
                                 # (see 'advanceBurn' helper function)
                             distance[i][j], rateCounts = advanceBurn(veg[i][j], cell_transition, distance[i][j], del_t, allRates, rateCounts)

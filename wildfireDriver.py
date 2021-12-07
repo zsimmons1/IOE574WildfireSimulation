@@ -33,8 +33,8 @@ map = map[:, 200:400, 150:350]
 cumulativeFire = np.zeros((np.size(map, 1), np.size(map, 2)), dtype=float)
 
 # Initiative other input constants
-starti = 100 # 'starti' is the i index (corresponding to latitude) where the fire initiates
-startj = 100 # 'startj' is the j index (corresponding to longitude) where the fire initiates
+starti = 100 # 'starti' is the i index (corresponding to latitude) where the fire initiates (100 for final)
+startj = 100 # 'startj' is the j index (corresponding to longitude) where the fire initiates (100 for final)
 del_t = 0.5 # in hours, the time step between updates of the fire status
 breachProb = 0.05 # the probability that the fire jumps any given fire line
 
@@ -48,13 +48,13 @@ print("windSpeeds and windDirs initialized")
 
 # Initialize enough breach probabilities for each replications
 breachProbs = []
-for i in range(1000):
+for i in range(10000):
     breachProbs.append(np.random.uniform())
 print("breachProbs initialized")
 
 # Initialize enough cellTransitionProbs for each replication  
 cellTransitionProbs = []
-for i in range(99999999):
+for i in range(9999999):
     cellTransitionProbs.append(np.random.uniform())
 print("cellTransitionProbs initialized")
 
@@ -86,9 +86,9 @@ for i in range(1000):
 for n in range(N):
     # Establish policies
     responseTime = 9 # the number of hours before proctive lines are planned/built
-    fireLineShape = "circle" # a string variable indicating whether the fire lines will be rectangular or cirucular
-    responseRadius = 6 # the number of cells away from the breach where the response lines are built
-    primaryBuffer = 12 # the number of cells away from the active fire border where the primary lines are built
+    fireLineShape = "rectangle" # a string variable indicating whether the fire lines will be rectangular or cirucular
+    responseRadius = 10 # the number of cells away from the breach where the response lines are built
+    primaryBuffer = 6 # the number of cells away from the active fire border where the primary lines are built
     concentricContingency = True # a boolean variable indicating if we will build a proactive concentric contingency line
     contingencyBuffer = primaryBuffer + 3
     spokes = True # a boolean variable indicating if we will build spokes for the contingency lines

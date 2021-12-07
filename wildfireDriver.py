@@ -14,14 +14,14 @@ from wildfireHelpers import *
 from runOneRep import *
 
 # Initialize simulation tracking variables
-# N is the number of replications to run
-N = 5
+numPolicies = 2 # numPolicies is the total number of policies being compared
+N = 5 # N is the number of replications to run
 # totBurnArea is the total area burned before fire containment
-totBurnArea = []
+totBurnArea = []*numPolicies
 # burnTime is the total burn time (in hours) of the fire before containment
-burnTime = []
+burnTime = []*numPolicies
 # linesBuilt is the number of cells of fire lines (of any type) built during the simulation run
-totLinesBuilt = []
+totLinesBuilt = []*numPolicies
 
 # Read data and initialize constant inputs
 # img holds the vegetation raster data from the LANDFIRE database
@@ -74,8 +74,12 @@ for i in range(10000):
 allRates = [treeRates, shrubRates, herbRates]
 print("allRates initialized")
 
-# TODO: Initialize enough windNoise for each replication
-windNoise = []
+# Initialize enough speedNoise and dirNoise for each replication
+speedNoise = []
+dirNoise = []
+for i in range(1000):
+    speedNoise.append(np.random.uniform(0.8, 1.2))
+    dirNoise.append(np.random.uniform(-11.25, 11.25))
 
 # Run N replications of each policy type
 for n in range(N):
@@ -88,7 +92,7 @@ for n in range(N):
     contingencyBuffer = primaryBuffer + 3
     spokes = True # a boolean variable indicating if we will build spokes for the contingency lines
     # run replication
-    totBurnArea, burnTime, linesBuilt, cumulativeFire = runOneRep(n, responseTime, fireLineShape, responseRadius, primaryBuffer, concentricContingency, contingencyBuffer, spokes, totBurnArea, burnTime, totLinesBuilt, map, cumulativeFire, starti, startj, del_t, breachProb, windSpeeds, windDirs, breachProbs, cellTransitionProbs, allRates)
+    totBurnArea, burnTime, linesBuilt, cumulativeFire = runOneRep(n, responseTime, fireLineShape, responseRadius, primaryBuffer, concentricContingency, contingencyBuffer, spokes, totBurnArea, burnTime, totLinesBuilt, map, cumulativeFire, starti, startj, del_t, breachProb, windSpeeds, windDirs, breachProbs, cellTransitionProbs, allRates, speedNoise, dirNoise)
     
 # Finish
 # Visualize and output results for each policy

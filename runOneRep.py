@@ -11,7 +11,7 @@ import math
 import copy
 from wildfireHelpers import *
 
-def runOneRep(n, responseTime, fireLineShape, responseRadius, primaryBuffer, concentricContingency, contingencyBuffer, spokes, totBurnArea, burnTime, totLinesBuilt, map, cumulativeFire, starti, startj, del_t, breachProb, windSpeeds, windDirs, breachProbs, cellTransitionProbs, allRates):
+def runOneRep(n, responseTime, fireLineShape, responseRadius, primaryBuffer, concentricContingency, contingencyBuffer, spokes, totBurnArea, burnTime, totLinesBuilt, map, cumulativeFire, starti, startj, del_t, breachProb, windSpeeds, windDirs, breachProbs, cellTransitionProbs, allRates, speedNoise, dirNoise):
     # Initialize replication-specific variables
     t = 0 # time elapsed, in hours
     linesBuilt = 0 # the number of fire lines built (of all types)
@@ -92,7 +92,7 @@ def runOneRep(n, responseTime, fireLineShape, responseRadius, primaryBuffer, con
             # on fire of all cells is equal between the previous time step and current time step
         fire = copy.deepcopy(tempFire) # update fire matrix 
         fireBorder = copy.deepcopy(tempFireBorder) # update fire border
-        wind_speed, wind_direction = updateWind(wind_speed, wind_direction) # update the wind speed and direction across all cells based for next time step based on current time step
+        wind_speed, wind_direction = updateWind(wind_speed, wind_direction, speedNoise[int(t*2)-1], dirNoise[int(t*2)-1]) # update the wind speed and direction across all cells based for next time step based on current time step
         
     # Store simulation results
     totBurnArea.append((np.sum(fire) * 900)/1000) # Total area burned (m^2 * 10^-3)

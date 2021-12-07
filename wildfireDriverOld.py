@@ -1,5 +1,4 @@
 # Include libraries
-import pandas
 import os 
 import matplotlib.pyplot as plt
 import matplotlib.lines as lines
@@ -22,14 +21,21 @@ totBurnArea = []
 burnTime = []
 # linesBuilt is the number of cells of fire lines (of any type) built during the simulation run
 totLinesBuilt = []
+# compiledResults is a vector of vectors of results for each policy type
+compiledReults = []
 
 # Read data and initialize constant inputs
 # img holds the vegetation raster data from the LANDFIRE database
-img = rasterio.open('/Users/Zack/Desktop/IOE574/TermProject/IOE574WildfireSimulation/us_210evc.tif')
+img = rasterio.open('/Users/sprin/OneDrive/Desktop/IOE574/TermProject/IOE574WildfireSimulation/northCali210EVC.tif')
 # 'map' holds original vegetation raster data from TIFF file
 map = img.read()
+# crop map
+map = map[:, 1000:1150, 1000:1200]
 # 'cumulativeFire' is a 2D matrix containing the number of simulations in which each cell was on fire
 cumulativeFire = np.zeros((np.size(map, 1), np.size(map, 2)), dtype=float)
+
+veg = np.floor_divide(map[0], np.ones([np.size(map, 1), np.size(map, 2)], dtype=int)*100)
+showOneRep(cumulativeFire, veg)
 
 # Initiative other input constants
 starti = 28 # 'starti' is the i index (corresponding to latitude) where the fire initiates
@@ -41,8 +47,8 @@ breachProb = 0.05 # the probability that the fire jumps any given fire line
 windSpeeds = []
 windDirs = []
 for n in range(N):
-    windSpeeds.append(initializeWindSpeed())
-    windDirs.append(initializeWindDir()) 
+    windSpeeds.append(initializeWind())
+    windDirs.append(0) # TODO: Sample wind_direction from data too?
 print("windSpeeds and windDirs initialized")
 
 # Initialize enough breach probabilities for each replications
@@ -61,7 +67,7 @@ print("cellTransitionProbs initialized")
 shape = [11.4, 13.6, 13.0, 0] 
 # trees
 treeRates = []
-for i in range(10000):
+for i in range(9999999):
     treeRates.append(np.random.weibull(11.4))
 # shrubs
 shrubRates = []
@@ -83,13 +89,10 @@ for n in range(N):
     primaryBuffer = 4 # the number of cells away from the active fire border where the primary lines are built
     concentricContingency = False # a boolean variable indicating if we will build a proactive concentric contingency line
     contingencyBuffer = primaryBuffer + 3
-    spokes = True # a boolean variable indicating if we will build spokes for the contingency lines
+    spokes = False # a boolean variable indicating if we will build spokes for the contingency lines
     # run replication
     totBurnArea, burnTime, linesBuilt, cumulativeFire = runOneRep(n, responseTime, fireLineShape, responseRadius, primaryBuffer, concentricContingency, contingencyBuffer, spokes, totBurnArea, burnTime, totLinesBuilt, map, cumulativeFire, starti, startj, del_t, breachProb, windSpeeds, windDirs, breachProbs, cellTransitionProbs, allRates)
     
 # Finish
 # Visualize and output results for each policy
 showResults(totBurnArea, burnTime, totLinesBuilt, cumulativeFire, map, N)
-
-
-

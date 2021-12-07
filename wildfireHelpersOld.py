@@ -11,7 +11,7 @@ import random
 
 # initializeWind: Based on input weather data, determine the appropriate Weibull distribution for wind speed
 # and draw from this distribution to determine the initial wind speed across all cells
-def initializeWindSpeed():
+def initializeWind():
     data = pandas.read_csv("weather.csv")
     messy_wind_speed = data["HourlyWindSpeed"]
     # remove nan values
@@ -21,17 +21,8 @@ def initializeWindSpeed():
     # generate a random wind speeds from a weibull distribution using parameters generated from actual data
     initial_wind = weibull_min.rvs(shape, loc, scale, size=1)
     # return the generated initial wind as a single value (not an array) in km/hr
-    return np.random.choice(initial_wind)*3.6
+    return (3600/1000)*initial_wind[0]
 
-def initializeWindDir():
-    data = pandas.read_csv("weather.csv")
-    messy_wind_dir = data["HourlyWindDirection"]
-    wh = messy_wind_dir.index[messy_wind_dir == 'VRB']
-    wind_dir_1 = messy_wind_dir.drop(wh)
-    wind_dir_1 = wind_dir_1[~wind_dir_1.isnull()]
-    wind_direction = wind_dir_1.astype(int)
-    return np.random.choice(wind_direction)
-    
 # updateWind: Determines the wind direction and velocity for cell i,j
     # 'wind_speed' is the wind speed (in km/hour) across all cells from the previous time period
     # 'wind_direction' is the angle (in degrees, where East is 0 degrees) of the wind across all cells from the 
@@ -81,38 +72,8 @@ def igniteCell(fire, i, j, distance, wind_speed, wind_direction, cellTransitionP
                 angle += 360
             # TODO: Create function(s) to determine alpha_w
             # set function based on wind speed
-            if wind_speed >= 0 and wind_speed < 10 :
-                w = 1
-                stdev = 100000000
-            elif wind_speed >= 10 and wind_speed < 20 :
-                w = 1.2
-                stdev = 250
-            elif wind_speed >= 20 and wind_speed < 30 :
-                w = 1.8
-                stdev = 160
-            elif wind_speed >= 30 and wind_speed < 50 :
-                w = 2.5
-                stdev = 70
-            elif wind_speed >= 50 and wind_speed < 60 :
-                w = 3
-                stdev = 80
-            elif wind_speed >= 60 and wind_speed < 70 :
-                w = 3.2
-                stdev = 60
-            elif wind_speed >= 70 and wind_speed < 80 :
-                w = 3.4
-                stdev = 50
-            elif wind_speed >= 80 and wind_speed < 90 :
-                w = 3.6
-                stdev = 38
-            elif wind_speed >= 90 and wind_speed < 100 :
-                w = 3.75
-                stdev = 25
-            else :
-                w = 4
-                stdev = 10
             # input angle into funciton to get alpha_w facor
-            alpha_w = w*math.exp(-0.5*(wind_direction**2)/stdev**2)
+            alpha_w = 1
             spread_prob[k] = spread_prob[k]*alpha_w
             # Ensure all probabilities are no more than 1
             if spread_prob[k] > 1:
@@ -158,7 +119,7 @@ def advanceBurn(veg, cell_transition, distance, del_t, allRates, rateCounts):
         if shape[veg-1] == 0:
             distance[x] = 0
         if cell_transition[x] == 1 and shape[veg-1] != 0:
-            del_x = math.pow(10, np.random.weibull(shape[veg-1]))*del_t
+            del_x = math.pow(10, allRates[veg-1][rateCounts[veg-1]])*del_t
             # diagonal neighbors can have spread distance up to 30*square root of 2 m
             if distance[x] + del_x > 30*pow(2, 0.5):
                 distance[x] = 30*pow(2, 0.5)
@@ -286,7 +247,7 @@ def circularLines(veg, fireLineBounds, contained, breachProbs, linesBuilt, breac
                         contained[i][j] = 1        
     return linesBuilt
 
-def addSpokes(veg, fireLineBounds, contained, breachProbs, linesBuilt, breachProb, fireLineShape):
+def addSpokes(veg, fireLineBounds, contained, breachProbs, linesBuilt, breachProb):
     # Unpack fire line bounds which will help calculate the radius of the circle
     rL = fireLineBounds[0]
     rU = fireLineBounds[1]
@@ -316,9 +277,6 @@ def addSpokes(veg, fireLineBounds, contained, breachProbs, linesBuilt, breachPro
     # Find dif between rL and cU to define other diagonal line #2
     b2 = rU - (slope2*cL)
 
-    # Find the max distance the spokes can be when circular
-    maxDist = distCalculator(cL, rC, cC, rC)
-
     # y = mx + b
     # j is a column but an x in linear eq
     # i is a row but a y in linear eq
@@ -327,30 +285,12 @@ def addSpokes(veg, fireLineBounds, contained, breachProbs, linesBuilt, breachPro
         for j in range(cL, cU + 1):            
             if i == int(j*slope1)+b1:
                 if breachFireLine(breachProbs, linesBuilt, breachProb) == False:
-                    if fireLineShape == "circle":
-                        currentDist = distCalculator(j, i, cC, rC)
-                        if currentDist <= maxDist:
-                            veg[i][j] = 4
-                            veg[i+1][j] = 4
-                    else:
-                        if j == cL or j == cU:
-                            veg[i][j] = 4
-                        else:
-                            veg[i][j] = 4
-                            veg[i+1][j] = 4
+                    veg[i][j] = 4
+                    veg[i+1][j] = 4
             if i == int(j*slope2)+b2:
                 if breachFireLine(breachProbs, linesBuilt, breachProb) == False:
-                    if fireLineShape == "circle":
-                        currentDist = distCalculator(j, i, cC, rC)
-                        if currentDist <= maxDist:
-                            veg[i][j] = 4
-                            veg[i+1][j] = 4
-                    else:
-                        if j == cL or j == cU:
-                            veg[i][j] = 4
-                        else:
-                            veg[i][j] = 4
-                            veg[i + 1][j] = 4
+                    veg[i][j] = 4
+                    veg[i + 1][j] = 4
             if i == rC:
                 if breachFireLine(breachProbs, linesBuilt, breachProb) == False:
                     veg[rC][j] = 4
@@ -377,10 +317,10 @@ def buildProactiveLines(i, j, contained, veg, buffer, breachProbs, linesBuilt, b
     # check the fireLineShape and call the appropriate helper function
     if fireLineShape == "rectangle":
         linesBuilt = rectangleLine(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb) 
-        if spokes == True: addSpokes(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb, fireLineShape)
+        if spokes == True: addSpokes(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb)
     elif fireLineShape == "circle":
         circularLines(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb)
-        if spokes == True: addSpokes(veg, [rL-3, rU+3, cL-3, cU+3], contained, breachProbs, linesBuilt, breachProb, fireLineShape)
+        if spokes == True: addSpokes(veg, [rL-3, rU+3, cL-3, cU+3], contained, breachProbs, linesBuilt, breachProb)
     return linesBuilt   
 
 # buildResponseLine:

@@ -102,3 +102,4 @@ def runOneRep(n, responseTime, fireLineShape, responseRadius, primaryBuffer, con
     print("Replication " + str(n+1) + ": " + str(t) + " hours to burn " + str(np.sum(fire) * 900) +" square meters")
     showOneRep(fire, veg)
     return totBurnArea, burnTime, linesBuilt, cumulativeFire
+    

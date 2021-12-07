@@ -39,8 +39,8 @@ def runOneRep(n, responseTime, fireLineShape, responseRadius, primaryBuffer, con
     fireBorder = [starti, starti, startj, startj] # [x_lower_bound, x_upper_bound, y_lower_bound, y_upper_bound]
 
     # Get wind speed and wind direction for this replication
-    wind_speed = windSpeeds[n]
-    wind_direction = windDirs[n]
+    wind_speed = windSpeeds[0]
+    wind_direction = windDirs[0]
 
     # Spread fire and build fire lines until there is zero fire spread OR fire spreads beyond map borders
     zeroSpread = False # Initially set 'zeroSpread' to False so we ititiate the while loop

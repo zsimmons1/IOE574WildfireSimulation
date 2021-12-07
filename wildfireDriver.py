@@ -25,7 +25,7 @@ totLinesBuilt = []
 
 # Read data and initialize constant inputs
 # img holds the vegetation raster data from the LANDFIRE database
-img = rasterio.open('/Users/Zack/Desktop/IOE574/TermProject/IOE574WildfireSimulation/us_210evc.tif')
+img = rasterio.open('/Users/sprin/OneDrive/Desktop/IOE574/TermProject/IOE574WildfireSimulation/us_210evc.tif')
 # 'map' holds original vegetation raster data from TIFF file
 map = img.read()
 # 'cumulativeFire' is a 2D matrix containing the number of simulations in which each cell was on fire
@@ -73,6 +73,9 @@ for i in range(10000):
     herbRates.append(np.random.weibull(13.0))        
 allRates = [treeRates, shrubRates, herbRates]
 print("allRates initialized")
+
+# TODO: Initialize enough windNoise for each replication
+windNoise = []
 
 # Run N replications of each policy type
 for n in range(N):

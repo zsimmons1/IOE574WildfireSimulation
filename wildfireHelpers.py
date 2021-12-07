@@ -281,7 +281,7 @@ def circularLines(veg, fireLineBounds, contained, breachProbs, linesBuilt, breac
                             veg[i][j] = 4
                         else:
                             contained[i][j] = -1   
-                        # newLinesBuilt += 1     
+                        linesBuilt += 1     
                     else:
                         contained[i][j] = 1        
     return linesBuilt
@@ -378,10 +378,10 @@ def buildProactiveLines(i, j, contained, veg, concentricContingency, primaryBuff
     if fireLineShape == "rectangle":
         linesBuilt = rectangleLine(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb) 
     elif fireLineShape == "circle":
-        circularLines(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb)
+        linesBuilt = circularLines(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb)
     
     if concentricContingency == True:
-        rL = tempFireBorder[0] - contingecyBuffer # row lower bound (northmost)
+        rL = tempFireBorder[0] - contingencyBuffer # row lower bound (northmost)
         rU = tempFireBorder[1] + contingencyBuffer # row upper bound (southmost)
         cL = tempFireBorder[2] - contingencyBuffer # column lower bound (westmost)
         cU = tempFireBorder[3] + contingencyBuffer # column upper bound (eastmost)
@@ -390,7 +390,7 @@ def buildProactiveLines(i, j, contained, veg, concentricContingency, primaryBuff
             linesBuilt = rectangleLine(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb) 
             if spokes == True: addSpokes(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb)
         elif fireLineShape == "circle":
-            circularLines(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb)
+            linesBuilt = circularLines(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb)
             if spokes == True: addSpokes(veg, [rL-3, rU+3, cL-3, cU+3], contained, breachProbs, linesBuilt, breachProb)
     return linesBuilt   
 

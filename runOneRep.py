@@ -56,10 +56,10 @@ def runOneRep(n, responseTime, fireLineShape, responseRadius, primaryBuffer, con
         
         # Draw all proactive fire lines as soon as t == responseTime
         if t == responseTime: 
-            linesBuilt = buildProactiveLines(i, j, contained, veg, primaryBuffer, breachProbs, linesBuilt, breachProb, tempFireBorder, fireLineShape, spokes)
+            linesBuilt = buildProactiveLines(i, j, contained, veg, concentricContingency, primaryBuffer, contingencyBuffer, breachProbs, linesBuilt, breachProb, tempFireBorder, fireLineShape, spokes)
             # If the policy calls for contingency lines, draw contigency lines
-            if concentricContingency:
-                linesBuilt = buildProactiveLines(i, j, contained, veg, contingencyBuffer, linesBuilt, breachProbs, breachProb, tempFireBorder, fireLineShape, spokes)
+            # if concentricContingency:
+            #     linesBuilt = buildProactiveLines(i, j, contained, veg, contingencyBuffer, linesBuilt, breachProbs, breachProb, tempFireBorder, fireLineShape, spokes)
 
         # Traverse the rectangular border around the fire edge plus one cell on each side
         for i in range(fireBorder[0] - 1, fireBorder[1] + 2): # i is latitutde index

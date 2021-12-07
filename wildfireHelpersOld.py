@@ -308,12 +308,12 @@ def addSpokes(veg, fireLineBounds, contained, breachProbs, linesBuilt, breachPro
     # 'fireBuffer' is the number of cells between the active fire border and location of primary fire line
     # 'breachProbs' is the probability that any fire will jump a fire line
     # 'tempFireBorder' is the current position of the active fire border in each direction
-def buildProactiveLines(i, j, contained, veg, buffer, breachProbs, linesBuilt, breachProb, tempFireBorder, fireLineShape, spokes):
+def buildProactiveLines(i, j, contained, veg, primaryBuffer, contingencyBuffer, breachProbs, linesBuilt, breachProb, tempFireBorder, fireLineShape, spokes):
     # Setting the x,y lower and upper bounds for the fire line boarder
-    rL = tempFireBorder[0] - buffer # row lower bound (northmost)
-    rU = tempFireBorder[1] + buffer # row upper bound (southmost)
-    cL = tempFireBorder[2] - buffer # column lower bound (westmost)
-    cU = tempFireBorder[3] + buffer # column upper bound (eastmost)
+    rL = tempFireBorder[0] - primaryBuffer # row lower bound (northmost)
+    rU = tempFireBorder[1] + primaryBuffer # row upper bound (southmost)
+    cL = tempFireBorder[2] - primaryBuffer # column lower bound (westmost)df
+    cU = tempFireBorder[3] + primaryBuffer # column upper bound (eastmost)
     # check the fireLineShape and call the appropriate helper function
     if fireLineShape == "rectangle":
         linesBuilt = rectangleLine(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb) 

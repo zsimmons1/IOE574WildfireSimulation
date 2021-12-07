@@ -100,4 +100,5 @@ def runOneRep(n, responseTime, fireLineShape, responseRadius, primaryBuffer, con
     totLinesBuilt.append((linesBuilt * 30)) # Total fire lines built (m)
     cumulativeFire = np.add(cumulativeFire, fire) # Add to cumulative burn
     print("Replication " + str(n+1) + ": " + str(t) + " hours to burn " + str(np.sum(fire) * 900) +" square meters")
+    showOneRep(fire, veg)
     return totBurnArea, burnTime, linesBuilt, cumulativeFire

@@ -247,7 +247,7 @@ def circularLines(veg, fireLineBounds, contained, breachProbs, linesBuilt, breac
                         contained[i][j] = 1        
     return linesBuilt
 
-def addSpokes(veg, fireLineBounds, contained, breachProbs, linesBuilt, breachProb):
+def addSpokes(veg, fireLineBounds, contained, breachProbs, linesBuilt, breachProb, fireLineShape):
     # Unpack fire line bounds which will help calculate the radius of the circle
     rL = fireLineBounds[0]
     rU = fireLineBounds[1]
@@ -277,6 +277,9 @@ def addSpokes(veg, fireLineBounds, contained, breachProbs, linesBuilt, breachPro
     # Find dif between rL and cU to define other diagonal line #2
     b2 = rU - (slope2*cL)
 
+    # Find the max distance the spokes can be when circular
+    maxDist = distCalculator(cL, rC, cC, rC)
+
     # y = mx + b
     # j is a column but an x in linear eq
     # i is a row but a y in linear eq
@@ -285,12 +288,30 @@ def addSpokes(veg, fireLineBounds, contained, breachProbs, linesBuilt, breachPro
         for j in range(cL, cU + 1):            
             if i == int(j*slope1)+b1:
                 if breachFireLine(breachProbs, linesBuilt, breachProb) == False:
-                    veg[i][j] = 4
-                    veg[i+1][j] = 4
+                    if fireLineShape == "circle":
+                        currentDist = distCalculator(j, i, cC, rC)
+                        if currentDist <= maxDist:
+                            veg[i][j] = 4
+                            veg[i+1][j] = 4
+                    else:
+                        if j == cL or j == cU:
+                            veg[i][j] = 4
+                        else:
+                            veg[i][j] = 4
+                            veg[i+1][j] = 4
             if i == int(j*slope2)+b2:
                 if breachFireLine(breachProbs, linesBuilt, breachProb) == False:
-                    veg[i][j] = 4
-                    veg[i + 1][j] = 4
+                    if fireLineShape == "circle":
+                        currentDist = distCalculator(j, i, cC, rC)
+                        if currentDist <= maxDist:
+                            veg[i][j] = 4
+                            veg[i+1][j] = 4
+                    else:
+                        if j == cL or j == cU:
+                            veg[i][j] = 4
+                        else:
+                            veg[i][j] = 4
+                            veg[i + 1][j] = 4
             if i == rC:
                 if breachFireLine(breachProbs, linesBuilt, breachProb) == False:
                     veg[rC][j] = 4
@@ -317,10 +338,10 @@ def buildProactiveLines(i, j, contained, veg, buffer, breachProbs, linesBuilt, b
     # check the fireLineShape and call the appropriate helper function
     if fireLineShape == "rectangle":
         linesBuilt = rectangleLine(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb) 
-        if spokes == True: addSpokes(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb)
+        if spokes == True: addSpokes(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb, fireLineShape)
     elif fireLineShape == "circle":
         circularLines(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb)
-        if spokes == True: addSpokes(veg, [rL-3, rU+3, cL-3, cU+3], contained, breachProbs, linesBuilt, breachProb)
+        if spokes == True: addSpokes(veg, [rL-3, rU+3, cL-3, cU+3], contained, breachProbs, linesBuilt, breachProb, fireLineShape)
     return linesBuilt   
 
 # buildResponseLine:

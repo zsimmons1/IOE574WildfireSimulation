@@ -24,7 +24,7 @@ totLinesBuilt = []
 
 # Read data and initialize constant inputs
 # img holds the vegetation raster data from the LANDFIRE database
-img = rasterio.open('/Users/sprin/OneDrive/Desktop/IOE574/TermProject/IOE574WildfireSimulation/us_210evc.tif')
+img = rasterio.open('/Users/Zack/Desktop/IOE574/TermProject/IOE574WildfireSimulation/us_210evc.tif')
 # 'map' holds original vegetation raster data from TIFF file
 map = img.read()
 # 'cumulativeFire' is a 2D matrix containing the number of simulations in which each cell was on fire
@@ -82,7 +82,7 @@ for n in range(N):
     primaryBuffer = 4 # the number of cells away from the active fire border where the primary lines are built
     concentricContingency = False # a boolean variable indicating if we will build a proactive concentric contingency line
     contingencyBuffer = primaryBuffer + 3
-    spokes = False # a boolean variable indicating if we will build spokes for the contingency lines
+    spokes = True # a boolean variable indicating if we will build spokes for the contingency lines
     # run replication
     totBurnArea, burnTime, linesBuilt, cumulativeFire = runOneRep(n, responseTime, fireLineShape, responseRadius, primaryBuffer, concentricContingency, contingencyBuffer, spokes, totBurnArea, burnTime, totLinesBuilt, map, cumulativeFire, starti, startj, del_t, breachProb, windSpeeds, windDirs, breachProbs, cellTransitionProbs, allRates)
     

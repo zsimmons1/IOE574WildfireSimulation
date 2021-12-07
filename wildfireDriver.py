@@ -15,7 +15,7 @@ from runOneRep import *
 
 # Initialize simulation tracking variables
 # N is the number of replications to run
-N = 5
+N = 1
 # totBurnArea is the total area burned before fire containment
 totBurnArea = []
 # burnTime is the total burn time (in hours) of the fire before containment
@@ -25,15 +25,16 @@ totLinesBuilt = []
 
 # Read data and initialize constant inputs
 # img holds the vegetation raster data from the LANDFIRE database
-img = rasterio.open('/Users/sprin/OneDrive/Desktop/IOE574/TermProject/IOE574WildfireSimulation/us_210evc.tif')
+img = rasterio.open('/Users/Zack/Desktop/IOE574/TermProject/IOE574WildfireSimulation/finalVegetationData.tif')
 # 'map' holds original vegetation raster data from TIFF file
 map = img.read()
+map = map[:, 200:400, 150:350]
 # 'cumulativeFire' is a 2D matrix containing the number of simulations in which each cell was on fire
 cumulativeFire = np.zeros((np.size(map, 1), np.size(map, 2)), dtype=float)
 
 # Initiative other input constants
-starti = 28 # 'starti' is the i index (corresponding to latitude) where the fire initiates
-startj = 24 # 'startj' is the j index (corresponding to longitude) where the fire initiates
+starti = 100 # 'starti' is the i index (corresponding to latitude) where the fire initiates
+startj = 100 # 'startj' is the j index (corresponding to longitude) where the fire initiates
 del_t = 0.5 # in hours, the time step between updates of the fire status
 breachProb = 0.05 # the probability that the fire jumps any given fire line
 
@@ -53,7 +54,7 @@ print("breachProbs initialized")
 
 # Initialize enough cellTransitionProbs for each replication  
 cellTransitionProbs = []
-for i in range(999999):
+for i in range(99999999):
     cellTransitionProbs.append(np.random.uniform())
 print("cellTransitionProbs initialized")
 
@@ -61,15 +62,15 @@ print("cellTransitionProbs initialized")
 shape = [11.4, 13.6, 13.0, 0] 
 # trees
 treeRates = []
-for i in range(10000):
+for i in range(100000):
     treeRates.append(np.random.weibull(11.4))
 # shrubs
 shrubRates = []
-for i in range(10000):
+for i in range(100000):
     shrubRates.append(np.random.weibull(13.6)) 
 # herbs
 herbRates = []
-for i in range(10000):
+for i in range(100000):
     herbRates.append(np.random.weibull(13.0))        
 allRates = [treeRates, shrubRates, herbRates]
 print("allRates initialized")
@@ -80,10 +81,10 @@ windNoise = []
 # Run N replications of each policy type
 for n in range(N):
     # Establish policies
-    responseTime = 2 # the number of hours before proctive lines are planned/built
+    responseTime = 9 # the number of hours before proctive lines are planned/built
     fireLineShape = "circle" # a string variable indicating whether the fire lines will be rectangular or cirucular
-    responseRadius = 4 # the number of cells away from the breach where the response lines are built
-    primaryBuffer = 4 # the number of cells away from the active fire border where the primary lines are built
+    responseRadius = 6 # the number of cells away from the breach where the response lines are built
+    primaryBuffer = 12 # the number of cells away from the active fire border where the primary lines are built
     concentricContingency = True # a boolean variable indicating if we will build a proactive concentric contingency line
     contingencyBuffer = primaryBuffer + 3
     spokes = True # a boolean variable indicating if we will build spokes for the contingency lines

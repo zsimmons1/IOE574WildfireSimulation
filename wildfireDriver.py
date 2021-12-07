@@ -78,10 +78,10 @@ print("allRates initialized")
 for n in range(N):
     # Establish policies
     responseTime = 2 # the number of hours before proctive lines are planned/built
-    fireLineShape = "rectangle" # a string variable indicating whether the fire lines will be rectangular or cirucular
+    fireLineShape = "circle" # a string variable indicating whether the fire lines will be rectangular or cirucular
     responseRadius = 4 # the number of cells away from the breach where the response lines are built
     primaryBuffer = 4 # the number of cells away from the active fire border where the primary lines are built
-    concentricContingency = False # a boolean variable indicating if we will build a proactive concentric contingency line
+    concentricContingency = True # a boolean variable indicating if we will build a proactive concentric contingency line
     contingencyBuffer = primaryBuffer + 3
     spokes = True # a boolean variable indicating if we will build spokes for the contingency lines
     # run replication

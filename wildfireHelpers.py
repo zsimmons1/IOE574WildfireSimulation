@@ -328,35 +328,41 @@ def addSpokes(veg, fireLineBounds, contained, breachProbs, linesBuilt, breachPro
             if i == int(j*slope1)+b1:
                 if breachFireLine(breachProbs, linesBuilt, breachProb) == False:
                     if fireLineShape == "circle":
-                        currentDist = distCalculator(j, i, cC, rC)
-                        if currentDist <= maxDist:
-                            veg[i][j] = 4
-                            veg[i+1][j] = 4
+                        if contained[i][j] == 0:
+                            currentDist = distCalculator(j, i, cC, rC)
+                            if currentDist <= maxDist+1:
+                                veg[i][j] = 4
+                                veg[i+1][j] = 4
                     else:
-                        if j == cL or j == cU:
-                            veg[i][j] = 4
-                        else:
-                            veg[i][j] = 4
-                            veg[i+1][j] = 4
+                        if contained[i][j] == 0:
+                            if j == cL or j == cU:
+                                veg[i][j] = 4
+                            else:
+                                veg[i][j] = 4
+                                veg[i+1][j] = 4
             if i == int(j*slope2)+b2:
                 if breachFireLine(breachProbs, linesBuilt, breachProb) == False:
                     if fireLineShape == "circle":
-                        currentDist = distCalculator(j, i, cC, rC)
-                        if currentDist <= maxDist:
-                            veg[i][j] = 4
-                            veg[i+1][j] = 4
+                        if contained[i][j] == 0:
+                            currentDist = distCalculator(j, i, cC, rC)
+                            if currentDist <= maxDist+1:
+                                veg[i][j] = 4
+                                veg[i+1][j] = 4
                     else:
-                        if j == cL or j == cU:
-                            veg[i][j] = 4
-                        else:
-                            veg[i][j] = 4
-                            veg[i + 1][j] = 4
+                        if contained[i][j] == 0:
+                            if j == cL or j == cU:
+                                veg[i][j] = 4
+                            else:
+                                veg[i][j] = 4
+                                veg[i + 1][j] = 4
             if i == rC:
                 if breachFireLine(breachProbs, linesBuilt, breachProb) == False:
-                    veg[rC][j] = 4
+                    if contained[i][j] == 0:
+                        veg[rC][j] = 4
             if j == cC:
                 if breachFireLine(breachProbs, linesBuilt, breachProb) == False:
-                    veg[i][cC] = 4
+                    if contained[i][j] == 0:
+                        veg[i][cC] = 4
 
     return 0
 
@@ -381,17 +387,17 @@ def buildProactiveLines(i, j, contained, veg, concentricContingency, primaryBuff
         circularLines(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb)
     
     if concentricContingency == True:
-        rL = tempFireBorder[0] - contingecyBuffer # row lower bound (northmost)
+        rL = tempFireBorder[0] - contingencyBuffer # row lower bound (northmost)
         rU = tempFireBorder[1] + contingencyBuffer # row upper bound (southmost)
         cL = tempFireBorder[2] - contingencyBuffer # column lower bound (westmost)
         cU = tempFireBorder[3] + contingencyBuffer # column upper bound (eastmost)
         # check the fireLineShape and call the appropriate helper function
         if fireLineShape == "rectangle":
+            if spokes == True: addSpokes(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb, fireLineShape)
             linesBuilt = rectangleLine(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb) 
-            if spokes == True: addSpokes(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb)
         elif fireLineShape == "circle":
+            if spokes == True: addSpokes(veg, [rL-3, rU+3, cL-3, cU+3], contained, breachProbs, linesBuilt, breachProb, fireLineShape)
             circularLines(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb)
-            if spokes == True: addSpokes(veg, [rL-3, rU+3, cL-3, cU+3], contained, breachProbs, linesBuilt, breachProb)
     return linesBuilt   
 
 # buildResponseLine:

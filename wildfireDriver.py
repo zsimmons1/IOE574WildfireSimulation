@@ -87,35 +87,8 @@ for n in range(N):
     totBurnArea, burnTime, linesBuilt, cumulativeFire = runOneRep(n, responseTime, fireLineShape, responseRadius, primaryBuffer, concentricContingency, contingencyBuffer, spokes, totBurnArea, burnTime, totLinesBuilt, map, cumulativeFire, starti, startj, del_t, breachProb, windSpeeds, windDirs, breachProbs, cellTransitionProbs, allRates)
     
 # Finish
-# Generate empirical CDFs
-fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
-y = np.linspace(1/N, 1, num=N)
-x1 = np.sort(totBurnArea)
-ax1.scatter(x1, y)
-ax1.set_title('Total Area Burned (squared meters * 10^-3)')
-x2 = np.sort(burnTime)
-ax2.scatter(x2, y)
-ax2.set_title('Total Burn Time (hours)')
-x3 = np.sort(totLinesBuilt)
-ax3.scatter(x3, y)
-ax3.set_title('Fire Lines Built (meters)')
-veg = np.floor_divide(map[0], np.ones([np.size(map, 1), np.size(map, 2)], dtype=int)*100)
-rgbIMG = np.zeros([np.size(veg, 0), np.size(veg, 1), 3], dtype=int)
-r = np.add(np.add(np.where(veg == 1, 56, 0), np.where(veg == 2, 147, 0)), np.where(veg == 3, 219, 0))
-g = np.add(np.add(np.where(veg == 1, 118, 0), np.where(veg == 2, 196, 0)), np.where(veg == 3, 235, 0))
-b = np.add(np.add(np.where(veg == 1, 29, 0), np.where(veg == 2, 125, 0)), np.where(veg == 3, 118, 0))
-vegRGB = np.dstack((r, g, b))
-ax4.imshow(vegRGB)
-alphaMat = np.ceil(cumulativeFire / N)
-cumulativeFire[cumulativeFire==0]=['nan']
-plot4 = ax4.imshow(cumulativeFire, cmap='autumn_r')
-cbar = plt.colorbar(plot4, ax = ax4, orientation='vertical')
-cbar.set_label('# of replications burned')
-ax4.set_title('Burn Map')
-plt.show()
+# Visualize and output results for each policy
+showResults(totBurnArea, burnTime, totLinesBuilt, cumulativeFire, map, N)
 
-print("Burn Area -- Average: " + str(np.average(totBurnArea)) + " thousand square meters")
-print("Burn Time -- Average: " + str(np.average(burnTime)) + " hours")
-print("Fire Lines Built -- Average: " + str(np.average(totLinesBuilt)) + " meters")  
 
 

@@ -36,11 +36,11 @@ def initializeWindDir():
     # 'wind_speed' is the wind speed (in km/hour) across all cells from the previous time period
     # 'wind_direction' is the angle (in degrees, where East is 0 degrees) of the wind across all cells from the 
         # previous time period
-def updateWind(wind_speed, wind_direction):
+def updateWind(wind_speed, wind_direction, sNoise, dNoise):
     # Apply multaplicative uniform noise to the wind speed U[0.8, 1.2] per Trucchia et al
-    wind_speed = np.random.uniform(0.8*wind_speed, 1.2*wind_speed)
+    wind_speed = wind_speed*sNoise
     # Apply multaplicative uniform noise to the wind direction U[−11.25◦, 11.25◦] per Trucchia et al
-    wind_direction = np.random.uniform(wind_direction - 11.25, wind_direction + 11.25)
+    wind_direction = wind_direction + dNoise
     # Ensure the angle is between 0 and 360
     if wind_direction < 0:
         wind_direction += 360
@@ -160,7 +160,7 @@ def advanceBurn(veg, cell_transition, distance, del_t, allRates, rateCounts):
         if shape[veg-1] == 0:
             distance[x] = 0
         if cell_transition[x] == 1 and shape[veg-1] != 0:
-            del_x = math.pow(10, np.random.weibull(shape[veg-1]))*del_t
+            del_x = math.pow(10, allRates[veg-1][rateCounts[veg-1]])*del_t
             # diagonal neighbors can have spread distance up to 30*square root of 2 m
             if distance[x] + del_x > 30*pow(2, 0.5):
                 distance[x] = 30*pow(2, 0.5)

@@ -73,7 +73,7 @@ def runOneRep(n, responseTime, fireLineShape, responseRadius, primaryBuffer, con
                             # determine if the cell is newly ignited and a fire line breach
                             if (fire[i][j] == 0) and (np.sum(cell_transition) > 0 and contained[i][j]== -1):
                                 # if so, build a response line!
-                                linesBuilt = buildResponseLine(i,j, contained, veg, responseRadius, breachProbs, linesBuilt, breachProb, fireLineShape, responseLineCounter)    
+                                linesBuilt, responseLineCounter = buildResponseLine(i,j, contained, veg, responseRadius, breachProbs, linesBuilt, breachProb, fireLineShape, responseLineCounter)    
                             # determine the amount of spread from each neighbor which has ignitied cell i,j
                                 # (see 'advanceBurn' helper function)
                             distance[i][j], rateCounts = advanceBurn(veg[i][j], cell_transition, distance[i][j], del_t, allRates, rateCounts)

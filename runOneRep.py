@@ -98,11 +98,12 @@ def runOneRep(n, responseTime, fireLineShape, responseRadius, primaryBuffer, con
         wind_speed, wind_direction = updateWind(wind_speed, wind_direction, speedNoise[int(t*2)-1], dirNoise[int(t*2)-1]) # update the wind speed and direction across all cells based for next time step based on current time step
         
     # Store simulation results
-    totBurnArea.append((np.sum(fire) * 900)/1000) # Total area burned (m^2 * 10^-3)
-    burnTime.append(t) # Total burn time 
-    totLinesBuilt.append((linesBuilt * 30)) # Total fire lines built (m)
+    totBurnArea = np.sum(fire) * 900 * 0.000247105 # Total area burned (acres)
+    totLinesBuilt = linesBuilt * 30 # Total fire lines built (m)
+
     cumulativeFire = np.add(cumulativeFire, fire) # Add to cumulative burn
     print("Replication " + str(n+1) + ", " + name + ": " + str(t) + " hours to burn " + str(np.sum(fire) * 900) +" square meters" + " or " + str(np.sum(fire) * 900 * 0.000247105) + " acres")
     showOneRep(fire, veg)
-    return totBurnArea, burnTime, linesBuilt, cumulativeFire
+
+    return totBurnArea, t, totLinesBuilt, cumulativeFire
     

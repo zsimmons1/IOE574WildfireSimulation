@@ -55,8 +55,8 @@ img = rasterio.open('/Users/sprin/OneDrive/Desktop/IOE574/TermProject/IOE574Wild
 # 'map' holds original vegetation raster data from TIFF file
 map = img.read()
 map = map[:, 200:400, 150:350]
-# 'cumulativeFire' is a 2D matrix containing the number of simulations in which each cell was on fire
-cumulativeFire = np.zeros((np.size(map, 1), np.size(map, 2)), dtype=float)
+# 'cumulativeFire' is a 3D matrix containing the number of simulations in which each cell was on fire
+cumulativeFire = np.zeros((6, np.size(map, 1), np.size(map, 2)), dtype=float)
 
 # Initiative other input constants
 starti = 100 # 'starti' is the i index (corresponding to latitude) where the fire initiates (100 for final)
@@ -78,8 +78,10 @@ for n in range(N):
     # Run one replication for each policy
     # TODO: Store results for each policy is separate csv files
     for p in range(6):
-        totBurnArea, burnTime, linesBuilt, cumulativeFire = runOneRep(n, responseTime, policies[p].fireLineShape, responseRadius, primaryBuffer, policies[p].concentric, contingencyBuffer, policies[p].spokes, totBurnArea, burnTime, totLinesBuilt, map, cumulativeFire, starti, startj, del_t, breachProb, initWindSpeed, initWindDir, breachProbs, cellTransitionProbs, allRates, speedNoise, dirNoise, policies[p].name)
-    
+        totAreaBurned, burnTime, totLinesBuilt, cumulativeFire[p] = runOneRep(n, responseTime, policies[p].fireLineShape, responseRadius, primaryBuffer, policies[p].concentric, contingencyBuffer, policies[p].spokes, totBurnArea, burnTime, totLinesBuilt, map, cumulativeFire[p], starti, startj, del_t, breachProb, initWindSpeed, initWindDir, breachProbs, cellTransitionProbs, allRates, speedNoise, dirNoise, policies[p].name)
+        with open(policies[p].name + ".csv", "w") as f_out:
+            writer = csv.writer(f_out, lineterminator = "\n")
+            writer.writerow([totAreaBurned, burnTime, totLinesBuilt])
 # Finish
 # Visualize and output results for each policy
 # showResults(totBurnArea, burnTime, totLinesBuilt, cumulativeFire, map, N)

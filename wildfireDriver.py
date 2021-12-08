@@ -63,9 +63,9 @@ del_t = 0.5 # in hours, the time step between updates of the fire status
 breachProb = 0.05 # the probability that the fire jumps any given fire line
 
 # Establish sensitivity analysis variables
-responseTime = 3 # the number of hours before proctive lines are planned/built
-responseRadius = 4 # the number of cells away from the breach where the response lines are built
-primaryBuffer = 4 # the number of cells away from the active fire border where the primary lines are built
+responseTime = 4 # the number of hours before proctive lines are planned/built
+responseRadius = 5 # the number of cells away from the breach where the response lines are built
+primaryBuffer = 5 # the number of cells away from the active fire border where the primary lines are built
 contingencyBuffer = primaryBuffer + 3
 
 # Run N replications of each policy type
@@ -74,7 +74,6 @@ for n in range(N):
     initWindSpeed, initWindDir, breachProbs, cellTransitionProbs, allRates, speedNoise, dirNoise = getRVs()
 
     # Run one replication for each policy
-    # TODO: Store results for each policy is separate csv files
     for p in range(6):
         totAreaBurned, burnTime, totLinesBuilt, avgWind, numBreached, responseLineCounter, cumulativeFire[p] = runOneRep(n, responseTime, policies[p].fireLineShape, responseRadius, primaryBuffer, policies[p].concentric, contingencyBuffer, policies[p].spokes, totBurnArea, burnTime, totLinesBuilt, map, cumulativeFire[p], starti, startj, del_t, breachProb, initWindSpeed, initWindDir, breachProbs, cellTransitionProbs, allRates, speedNoise, dirNoise, policies[p].name)
         with open(policies[p].name + ".csv", "a") as f_out:

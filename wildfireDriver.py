@@ -36,7 +36,7 @@ policies = [policyA, policyB, policyC, policyD, policyE, policyF]
 
 # Create a header line in each csv file
 for p in range(6):
-    with open(policies[p].name + ".csv", "w") as f_out:
+    with open(policies[p].name + ".csv", "a") as f_out:
         writer = csv.writer(f_out, lineterminator = "\n")
         writer.writerow(["AreaBurned", "BurnTime", "LinesBuilt"])
 
@@ -79,7 +79,7 @@ for n in range(N):
     # TODO: Store results for each policy is separate csv files
     for p in range(6):
         totAreaBurned, burnTime, totLinesBuilt, cumulativeFire[p] = runOneRep(n, responseTime, policies[p].fireLineShape, responseRadius, primaryBuffer, policies[p].concentric, contingencyBuffer, policies[p].spokes, totBurnArea, burnTime, totLinesBuilt, map, cumulativeFire[p], starti, startj, del_t, breachProb, initWindSpeed, initWindDir, breachProbs, cellTransitionProbs, allRates, speedNoise, dirNoise, policies[p].name)
-        with open(policies[p].name + ".csv", "w") as f_out:
+        with open(policies[p].name + ".csv", "a") as f_out:
             writer = csv.writer(f_out, lineterminator = "\n")
             writer.writerow([totAreaBurned, burnTime, totLinesBuilt])
 # Finish

@@ -41,7 +41,7 @@ for p in range(6):
         writer.writerow(["AreaBurned", "BurnTime", "LinesBuilt"])
 
 # Initialize simulation tracking variables
-N = 1 # N is the number of replications to run
+N = 5 # N is the number of replications to run
 # totBurnArea is the total area burned before fire containment
 totBurnArea = []
 # burnTime is the total burn time (in hours) of the fire before containment
@@ -84,5 +84,5 @@ for n in range(N):
             writer.writerow([totAreaBurned, burnTime, totLinesBuilt])
 # Finish
 # Visualize and output results for each policy
-# showResults(totBurnArea, burnTime, totLinesBuilt, cumulativeFire, map, N)
+showMaps(map, cumulativeFire)
 print("Simulation complete")

@@ -21,9 +21,6 @@ class Policy:
         self.concentric = concentric # a boolean variable indicating if we will build a proactive concentric contingency line
         self.spokes = spokes # a boolean variable indicating if we will build spokes for the contingency lines
         self.name = name # a string with the letter name of the policy
-        # Open a csv file for each policy to store results
-        # with open(name + ".csv", "w") as f_out:
-        #     self.output = csv.writer(f_out, lineterminator = "\n")
 
 # Establish policies
 policyA = Policy("rectangle", False, False, "policyA")
@@ -38,7 +35,7 @@ policies = [policyA, policyB, policyC, policyD, policyE, policyF]
 for p in range(6):
     with open(policies[p].name + ".csv", "a") as f_out:
         writer = csv.writer(f_out, lineterminator = "\n")
-        writer.writerow(["AreaBurned", "BurnTime", "LinesBuilt"])
+        writer.writerow(["AreaBurned", "BurnTime", "LinesBuilt", "AvgWind", "numBreaches", "numResponses"])
 
 # Initialize simulation tracking variables
 N = 5 # N is the number of replications to run
@@ -54,6 +51,7 @@ totLinesBuilt = []
 img = rasterio.open('/Users/sprin/OneDrive/Desktop/IOE574/TermProject/IOE574WildfireSimulation/finalVegetationData.tif')
 # 'map' holds original vegetation raster data from TIFF file
 map = img.read()
+# crop map to area of interest
 map = map[:, 200:400, 150:350]
 # 'cumulativeFire' is a 3D matrix containing the number of simulations in which each cell was on fire
 cumulativeFire = np.zeros((6, np.size(map, 1), np.size(map, 2)), dtype=float)
@@ -78,10 +76,10 @@ for n in range(N):
     # Run one replication for each policy
     # TODO: Store results for each policy is separate csv files
     for p in range(6):
-        totAreaBurned, burnTime, totLinesBuilt, cumulativeFire[p] = runOneRep(n, responseTime, policies[p].fireLineShape, responseRadius, primaryBuffer, policies[p].concentric, contingencyBuffer, policies[p].spokes, totBurnArea, burnTime, totLinesBuilt, map, cumulativeFire[p], starti, startj, del_t, breachProb, initWindSpeed, initWindDir, breachProbs, cellTransitionProbs, allRates, speedNoise, dirNoise, policies[p].name)
+        totAreaBurned, burnTime, totLinesBuilt, avgWind, numBreached, responseLineCounter, cumulativeFire[p] = runOneRep(n, responseTime, policies[p].fireLineShape, responseRadius, primaryBuffer, policies[p].concentric, contingencyBuffer, policies[p].spokes, totBurnArea, burnTime, totLinesBuilt, map, cumulativeFire[p], starti, startj, del_t, breachProb, initWindSpeed, initWindDir, breachProbs, cellTransitionProbs, allRates, speedNoise, dirNoise, policies[p].name)
         with open(policies[p].name + ".csv", "a") as f_out:
             writer = csv.writer(f_out, lineterminator = "\n")
-            writer.writerow([totAreaBurned, burnTime, totLinesBuilt])
+            writer.writerow([totAreaBurned, burnTime, totLinesBuilt, avgWind, numBreached, responseLineCounter])
 # Finish
 # Visualize and output results for each policy
 showMaps(map, cumulativeFire)

@@ -28,6 +28,8 @@ def runOneRep(n, responseTime, fireLineShape, responseRadius, primaryBuffer, con
     hSpread = 0 # the number of spread rates sampled for herbs
     int(hSpread)
     rateCounts = [tSpread, sSpread, hSpread]
+    windOverTime = []
+    numBreached = 0
     # 'veg' is a 2D matrix containing the cell vegetation type as an integer (0 = unburnable, 1 = trees, 2 = shrub, 3 = herb, 4 = fire border)
     veg = np.floor_divide(map[0], np.ones([np.size(map, 1), np.size(map, 2)], dtype=int)*100)
     # 'fire' is a 2D matrix containing the percentage on fire of each cell on the map
@@ -50,6 +52,7 @@ def runOneRep(n, responseTime, fireLineShape, responseRadius, primaryBuffer, con
     borderReached = False # Initially set 'borderReached' to False so we initiate the while loop
     while (zeroSpread == False and borderReached == False):
         t += del_t # increment time
+        windOverTime.append(wind_speed)
         tempFire = copy.deepcopy(fire) # 'tempFire' is a temporary fire matrix to store new % of fire info. Use of this temp
             # matrix ensures that all fire spread depends on the state of spread in the previous time step, 
             # not the current time step (thus preventing spreading too quickly).
@@ -59,7 +62,7 @@ def runOneRep(n, responseTime, fireLineShape, responseRadius, primaryBuffer, con
         
         # Draw all proactive fire lines as soon as t == responseTime
         if t == responseTime: 
-            linesBuilt = buildProactiveLines(i, j, contained, veg, concentricContingency, primaryBuffer, contingencyBuffer, breachProbs, linesBuilt, breachProb, tempFireBorder, fireLineShape, spokes, responseLineCounter)
+            linesBuilt, numBreached = buildProactiveLines(i, j, contained, veg, concentricContingency, primaryBuffer, contingencyBuffer, breachProbs, linesBuilt, breachProb, tempFireBorder, fireLineShape, spokes, responseLineCounter, numBreached)
             # If the policy calls for contingency lines, draw contigency lines
             # if concentricContingency:
             #     linesBuilt = buildProactiveLines(i, j, contained, veg, contingencyBuffer, linesBuilt, breachProbs, breachProb, tempFireBorder, fireLineShape, spokes)
@@ -75,7 +78,7 @@ def runOneRep(n, responseTime, fireLineShape, responseRadius, primaryBuffer, con
                             # determine if the cell is newly ignited and a fire line breach
                             if (fire[i][j] == 0) and (np.sum(cell_transition) > 0 and contained[i][j]== -1):
                                 # if so, build a response line!
-                                linesBuilt, responseLineCounter = buildResponseLine(i,j, contained, veg, responseRadius, breachProbs, linesBuilt, breachProb, fireLineShape, responseLineCounter)    
+                                linesBuilt, responseLineCounter, numBreached = buildResponseLine(i,j, contained, veg, responseRadius, breachProbs, linesBuilt, breachProb, fireLineShape, responseLineCounter, numBreached)    
                             # determine the amount of spread from each neighbor which has ignitied cell i,j
                                 # (see 'advanceBurn' helper function)
                             distance[i][j], rateCounts = advanceBurn(veg[i][j], cell_transition, distance[i][j], del_t, allRates, rateCounts)
@@ -96,14 +99,16 @@ def runOneRep(n, responseTime, fireLineShape, responseRadius, primaryBuffer, con
         fire = copy.deepcopy(tempFire) # update fire matrix 
         fireBorder = copy.deepcopy(tempFireBorder) # update fire border
         wind_speed, wind_direction = updateWind(wind_speed, wind_direction, speedNoise[int(t*2)-1], dirNoise[int(t*2)-1]) # update the wind speed and direction across all cells based for next time step based on current time step
-        
+
     # Store simulation results
     totBurnArea = np.sum(fire) * 900 * 0.000247105 # Total area burned (acres)
     totLinesBuilt = linesBuilt * 30 # Total fire lines built (m)
+    avgWind = np.sum(windOverTime) / len(windOverTime) # The average wind speed over the course of the simulation (m/s)
+
 
     cumulativeFire = np.add(cumulativeFire, fire) # Add to cumulative burn
     print("Replication " + str(n+1) + ", " + name + ": " + str(t) + " hours to burn " + str(np.sum(fire) * 900) +" square meters" + " or " + str(np.sum(fire) * 900 * 0.000247105) + " acres")
     # showOneRep(fire, veg)
 
-    return totBurnArea, t, totLinesBuilt, cumulativeFire
+    return totBurnArea, t, totLinesBuilt, avgWind, numBreached, responseLineCounter, cumulativeFire
     

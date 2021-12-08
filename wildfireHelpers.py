@@ -24,7 +24,7 @@ def getRVs():
 
     # Initialize enough cellTransitionProbs for each replication  
     cellTransitionProbs = []
-    for i in range(999999):
+    for i in range(9999999):
         cellTransitionProbs.append(np.random.uniform())
     print("cellTransitionProbs initialized")
 
@@ -260,7 +260,7 @@ def breachFireLine(breachProbs, linesBuilt, breachProb, responseLineCounter):
     # 'contained' is a 2D matrix containing the status of the cell's containment 
     #   (1 if is is within a fire-line, 0 otherwise)
     # 'breachProb' is the probability that the fire jumps any given fire line
-def rectangleLine(veg, fireLineBounds, contained, breachProbs, linesBuilt, breachProb, responseLineCounter, proactive):
+def rectangleLine(veg, fireLineBounds, contained, breachProbs, linesBuilt, breachProb, responseLineCounter, proactive, numBreached):
     # Unpack fire line bounds
     rL = fireLineBounds[0] # row lower bound (northmost)
     rU = fireLineBounds[1] # row upper bound (southmost)
@@ -271,16 +271,17 @@ def rectangleLine(veg, fireLineBounds, contained, breachProbs, linesBuilt, breac
     # Set the vegitation type to 4 for the fire lines
     for i in range(rL, rU+1): # Build vertical fire lines
         if contained[i][cL] == 0: # if the potential West fire line is not already contained
-            if breachFireLine(breachProbs, linesBuilt, breachProb, responseLineCounter) == False: 
-                veg[i][cL] = 4
+            if breachFireLine(breachProbs, linesBuilt, breachProb, responseLineCounter) == False: veg[i][cL] = 4
             else: 
                 contained[i][cL] = -1
+                numBreached += 1
                 if proactive == False: responseLineCounter += 1
             linesBuilt += 1 
         if contained[i][cU] == 0: # if the potential East fire line is not already contained 
             if breachFireLine(breachProbs, linesBuilt, breachProb, responseLineCounter) == False: veg[i][cU] = 4
             else: 
                 contained[i][cU] = -1
+                numBreached += 1
                 if proactive == False:
                     responseLineCounter += 1
             linesBuilt += 1    
@@ -289,26 +290,28 @@ def rectangleLine(veg, fireLineBounds, contained, breachProbs, linesBuilt, breac
             if breachFireLine(breachProbs, linesBuilt, breachProb, responseLineCounter) == False: veg[rL][j] = 4 
             else: 
                 contained[rL][j] = -1
+                numBreached += 1
                 if proactive == False: responseLineCounter += 1
             linesBuilt += 1 
         if contained[rU][j] == 0: # if the potential South fire line is not already contained   
             if breachFireLine(breachProbs, linesBuilt, breachProb, responseLineCounter) == False: veg[rU][j] = 4
             else: 
                 contained[rU][j] = -1
+                numBreached += 1
                 if proactive == False: responseLineCounter += 1
             linesBuilt += 1       
     # Create the contained zone from the new fire line
     for i in range(rL+1, rU):
         for j in range(cL+1, cU):
             contained[i][j] = 1            
-    return linesBuilt, responseLineCounter
+    return linesBuilt, responseLineCounter, numBreached
 
 
 def distCalculator(x1, y1, x2, y2):
     dist = ((x2 - x1)**(2) + (y2-y1)**(2))**(0.5)
     return dist
 
-def circularLines(veg, fireLineBounds, contained, breachProbs, linesBuilt, breachProb, responseLineCounter, proactive):
+def circularLines(veg, fireLineBounds, contained, breachProbs, linesBuilt, breachProb, responseLineCounter, proactive, numBreached):
     # newLinesBuilt = 0
     # Unpack fire line bounds which will help calculate the radius of the circle
     rL = fireLineBounds[0]
@@ -338,14 +341,15 @@ def circularLines(veg, fireLineBounds, contained, breachProbs, linesBuilt, breac
                     if rad <= currDist:
                         if breachFireLine(breachProbs, linesBuilt, breachProb, responseLineCounter) == False: veg[i][j] = 4
                         else:
-                            contained[i][j] = -1   
+                            contained[i][j] = -1  
+                            numBreached += 1 
                             if proactive == False: responseLineCounter += 1
                         linesBuilt += 1     
                     else:
                         contained[i][j] = 1        
-    return linesBuilt, responseLineCounter
+    return linesBuilt, responseLineCounter, numBreached
 
-def addSpokes(veg, fireLineBounds, contained, breachProbs, linesBuilt, breachProb, fireLineShape, responseLineCounter):
+def addSpokes(veg, fireLineBounds, contained, breachProbs, linesBuilt, breachProb, fireLineShape, responseLineCounter, numBreached):
     # Unpack fire line bounds which will help calculate the radius of the circle
     rL = fireLineBounds[0]
     rU = fireLineBounds[1]
@@ -395,31 +399,39 @@ def addSpokes(veg, fireLineBounds, contained, breachProbs, linesBuilt, breachPro
                     if contained[i][j] == 0:
                         if j == cL or j == cU:
                             if breachFireLine(breachProbs, linesBuilt, breachProb, responseLineCounter) == False: veg[i][j] = 4
+                            else: numBreached += 1
                             linesBuilt += 1   
                         else:
                             if breachFireLine(breachProbs, linesBuilt, breachProb, responseLineCounter) == False: veg[i][j] = 4
+                            else: numBreached += 1
                             linesBuilt += 1   
                             if breachFireLine(breachProbs, linesBuilt, breachProb, responseLineCounter) == False: veg[i+1][j] = 4
+                            else: numBreached += 1
                             linesBuilt += 1
                 if i == np.floor((j*slope2)+b2):
                     if contained[i][j] == 0:
                         if j == cL or j == cU:
                             if breachFireLine(breachProbs, linesBuilt, breachProb, responseLineCounter) == False: veg[i][j] = 4
+                            else: numBreached += 1
                             linesBuilt += 1   
                         else:
                             if breachFireLine(breachProbs, linesBuilt, breachProb, responseLineCounter) == False: veg[i][j] = 4
+                            else: numBreached += 1
                             linesBuilt += 1   
                             if breachFireLine(breachProbs, linesBuilt, breachProb, responseLineCounter) == False: veg[i + 1][j] = 4
+                            else: numBreached += 1
                             linesBuilt += 1    
             # Left to right spokes for both circular and rectangular
             if i == rC:
                 if breachFireLine(breachProbs, linesBuilt, breachProb, responseLineCounter) == False:
                     if contained[i][j] == 0: veg[rC][j] = 4
+                else: numBreached += 1
                 linesBuilt += 1
             # Top to bottom spokes for both circular and rectangular
             if j == cC:
                 if breachFireLine(breachProbs, linesBuilt, breachProb, responseLineCounter) == False:
                     if contained[i][j] == 0: veg[i][cC] = 4
+                else: numBreached += 1
                 linesBuilt += 1
     
     # Diagonal spokes for circular
@@ -452,10 +464,13 @@ def addSpokes(veg, fireLineBounds, contained, breachProbs, linesBuilt, breachPro
                 dist1 = distCalculator(currColPos1, currRowPos1, cC, rC)
                 if dist1 <= maxDist:
                     if breachFireLine(breachProbs, linesBuilt, breachProb, responseLineCounter) == False: veg[currRowPos1][currColPos1] = 4
+                    else: numBreached += 1
                     linesBuilt += 1
                     if breachFireLine(breachProbs, linesBuilt, breachProb, responseLineCounter) == False: veg[currRowPos1][currColPos1-1] = 4
+                    else: numBreached += 1
                     linesBuilt += 1
                     if breachFireLine(breachProbs, linesBuilt, breachProb, responseLineCounter) == False: veg[currRowPos1+1][currColPos1] = 4
+                    else: numBreached += 1
                     linesBuilt += 1
 
             currRowPos2 -= slope1
@@ -464,14 +479,14 @@ def addSpokes(veg, fireLineBounds, contained, breachProbs, linesBuilt, breachPro
             if contained[currRowPos2][currColPos2] == 0:
                 dist2 = distCalculator(currColPos2, currRowPos2, cC, rC)
                 if dist2 <= maxDist:
-                    if breachFireLine(breachProbs, linesBuilt, breachProb, responseLineCounter) == False:
-                        veg[currRowPos2][currColPos2] = 4
+                    if breachFireLine(breachProbs, linesBuilt, breachProb, responseLineCounter) == False: veg[currRowPos2][currColPos2] = 4
+                    else: numBreached += 1
                     linesBuilt += 1
-                    if breachFireLine(breachProbs, linesBuilt, breachProb, responseLineCounter) == False:
-                        veg[currRowPos2+1][currColPos2] = 4
+                    if breachFireLine(breachProbs, linesBuilt, breachProb, responseLineCounter) == False: veg[currRowPos2+1][currColPos2] = 4
+                    else: numBreached += 1
                     linesBuilt += 1
-                    if breachFireLine(breachProbs, linesBuilt, breachProb, responseLineCounter) == False:
-                        veg[currRowPos2][currColPos2-1] = 4
+                    if breachFireLine(breachProbs, linesBuilt, breachProb, responseLineCounter) == False: veg[currRowPos2][currColPos2-1] = 4
+                    else: numBreached += 1
                     linesBuilt += 1
 
             currRowNeg1 -= slope2
@@ -481,10 +496,13 @@ def addSpokes(veg, fireLineBounds, contained, breachProbs, linesBuilt, breachPro
                 dist3 = distCalculator(currColNeg1, currRowNeg1, cC, rC)
                 if dist3 <= maxDist:
                     if breachFireLine(breachProbs, linesBuilt, breachProb, responseLineCounter) == False: veg[currRowNeg1][currColNeg1] = 4
+                    else: numBreached += 1
                     linesBuilt += 1
                     if breachFireLine(breachProbs, linesBuilt, breachProb, responseLineCounter) == False: veg[currRowNeg1+1][currColNeg1] = 4
+                    else: numBreached += 1
                     linesBuilt += 1
                     if breachFireLine(breachProbs, linesBuilt, breachProb, responseLineCounter) == False: veg[currRowNeg1][currColNeg1+1] = 4
+                    else: numBreached += 1
                     linesBuilt += 1
 
             currRowNeg2 += slope2
@@ -494,15 +512,18 @@ def addSpokes(veg, fireLineBounds, contained, breachProbs, linesBuilt, breachPro
                 dist4 = distCalculator(currColNeg2, currRowNeg2, cC, rC)
                 if dist4 <= maxDist:
                     if breachFireLine(breachProbs, linesBuilt, breachProb, responseLineCounter) == False: veg[currRowNeg2][currColNeg2] = 4
+                    else: numBreached += 1
                     linesBuilt += 1
                     if breachFireLine(breachProbs, linesBuilt, breachProb, responseLineCounter) == False: veg[currRowNeg2-1][currColNeg2] = 4
+                    else: numBreached += 1
                     linesBuilt += 1
                     if breachFireLine(breachProbs, linesBuilt, breachProb, responseLineCounter) == False: veg[currRowNeg2][currColNeg2-1] = 4
+                    else: numBreached += 1
                     linesBuilt += 1
 
             distFromCenter = max(dist1, dist2, dist3, dist4)
 
-    return linesBuilt
+    return linesBuilt, numBreached
 
 # buildPrimaryLines:
     # 'i' is the latitude index of the cell where the fire line was breached
@@ -512,7 +533,7 @@ def addSpokes(veg, fireLineBounds, contained, breachProbs, linesBuilt, breachPro
     # 'fireBuffer' is the number of cells between the active fire border and location of primary fire line
     # 'breachProbs' is the probability that any fire will jump a fire line
     # 'tempFireBorder' is the current position of the active fire border in each direction
-def buildProactiveLines(i, j, contained, veg, concentricContingency, primaryBuffer, contingencyBuffer, breachProbs, linesBuilt, breachProb, tempFireBorder, fireLineShape, spokes, responseLineCounter):
+def buildProactiveLines(i, j, contained, veg, concentricContingency, primaryBuffer, contingencyBuffer, breachProbs, linesBuilt, breachProb, tempFireBorder, fireLineShape, spokes, responseLineCounter, numBreached):
     # Setting the x,y lower and upper bounds for the fire line boarder
     rL = tempFireBorder[0] - primaryBuffer # row lower bound (northmost)
     rU = tempFireBorder[1] + primaryBuffer # row upper bound (southmost)
@@ -521,10 +542,10 @@ def buildProactiveLines(i, j, contained, veg, concentricContingency, primaryBuff
     # check the fireLineShape and call the appropriate helper function
     proactive = True
     if fireLineShape == "rectangle":
-        linesBuilt, responseLineCounter = rectangleLine(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb, responseLineCounter, proactive) 
+        linesBuilt, responseLineCounter, numBreached = rectangleLine(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb, responseLineCounter, proactive, numBreached) 
         # print("response line counter after Proactive: ", responseLineCounter)
     elif fireLineShape == "circle":
-        linesBuilt, responseLineCounter = circularLines(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb, responseLineCounter, proactive)
+        linesBuilt, responseLineCounter, numBreached = circularLines(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb, responseLineCounter, proactive, numBreached)
     
     if concentricContingency == True:
         rL = tempFireBorder[0] - contingencyBuffer # row lower bound (northmost)
@@ -533,13 +554,13 @@ def buildProactiveLines(i, j, contained, veg, concentricContingency, primaryBuff
         cU = tempFireBorder[3] + contingencyBuffer # column upper bound (eastmost)
         # check the fireLineShape and call the appropriate helper function
         if fireLineShape == "rectangle":
-            if spokes == True: linesBuilt = addSpokes(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb, fireLineShape, responseLineCounter)
-            linesBuilt, responseLineCounter = rectangleLine(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb, responseLineCounter, proactive) 
+            if spokes == True: linesBuilt, numBreached = addSpokes(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb, fireLineShape, responseLineCounter, numBreached)
+            linesBuilt, responseLineCounter, numBreached = rectangleLine(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb, responseLineCounter, proactive, numBreached) 
             # print("response line counter after contingency: ", responseLineCounter)
         elif fireLineShape == "circle":
-            if spokes == True: linesBuilt = addSpokes(veg, [rL-3, rU+3, cL-3, cU+3], contained, breachProbs, linesBuilt, breachProb, fireLineShape, responseLineCounter)
-            linesBuilt, responseLineCounter = circularLines(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb, responseLineCounter, proactive)
-    return linesBuilt   
+            if spokes == True: linesBuilt, numBreached = addSpokes(veg, [rL-3, rU+3, cL-3, cU+3], contained, breachProbs, linesBuilt, breachProb, fireLineShape, responseLineCounter, numBreached)
+            linesBuilt, responseLineCounter, numBreached = circularLines(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb, responseLineCounter, proactive, numBreached)
+    return linesBuilt, numBreached   
 
 # buildResponseLine:
     # 'i' is the latitude index of the cell where the fire line was breached
@@ -548,7 +569,7 @@ def buildProactiveLines(i, j, contained, veg, concentricContingency, primaryBuff
     # 'veg' is a 2D matrix containing the cell vegetation type as an integer (4 indicates an unbreached fire border)
     # 'responseRadius' is the radius of the squre of the reponse line
     # 'breachProb' is the probability that any fire will jump a fire line
-def buildResponseLine(i, j, contained, veg, responseRadius, breachProbs, linesBuilt, breachProb, fireLineShape, responseLineCounter):
+def buildResponseLine(i, j, contained, veg, responseRadius, breachProbs, linesBuilt, breachProb, fireLineShape, responseLineCounter, numBreached):
     # Setting the x,y lower and upper bounds for the fire line boarder to ensure they do not exceed the 
         # bounds of the map
     # left fire line boundary
@@ -568,11 +589,11 @@ def buildResponseLine(i, j, contained, veg, responseRadius, breachProbs, linesBu
 
     # check the fireLineShape and call the appropriate helper function
     if fireLineShape == "rectangle":
-        linesBuilt, responseLineCounter = rectangleLine(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb, responseLineCounter, proactive) 
+        linesBuilt, responseLineCounter, numBreached = rectangleLine(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb, responseLineCounter, proactive, numBreached) 
         # print("response line counter after each response line: ", responseLineCounter)
     elif fireLineShape == "circle":
-        linesBuilt, responseLineCounter = circularLines(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb, responseLineCounter, proactive) 
-    return linesBuilt, responseLineCounter
+        linesBuilt, responseLineCounter, numBreached = circularLines(veg, [rL, rU, cL, cU], contained, breachProbs, linesBuilt, breachProb, responseLineCounter, proactive, numBreached) 
+    return linesBuilt, responseLineCounter, numBreached
 
 # showMaps: an alternative to showResults that just shows the cumulativeFire maps
 def showMaps(map, cumulativeFire):

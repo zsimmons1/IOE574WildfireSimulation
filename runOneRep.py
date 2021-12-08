@@ -1,14 +1,16 @@
 # Include libraries
+import pandas
 import os 
-import matplotlib.pyplot as plt
-import matplotlib.lines as lines
-from matplotlib.colors import *
-import numpy as np
-import rasterio
-from rasterio.plot import show
-from array import array
 import math
 import copy
+import csv
+import rasterio
+import matplotlib.pyplot as plt
+import matplotlib.lines as lines
+import numpy as np
+from rasterio.plot import show
+from array import array
+from matplotlib.colors import *
 from wildfireHelpers import *
 
 def runOneRep(n, responseTime, fireLineShape, responseRadius, primaryBuffer, concentricContingency, contingencyBuffer, spokes, totBurnArea, burnTime, totLinesBuilt, map, cumulativeFire, starti, startj, del_t, breachProb, initWindSpeed, initWindDir, breachProbs, cellTransitionProbs, allRates, speedNoise, dirNoise, name):

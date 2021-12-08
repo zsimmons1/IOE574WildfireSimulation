@@ -1,13 +1,13 @@
 # Include libraries
-import numpy as np
 import math
+import pandas
+import random
+import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.lines as lines
 from rasterio.plot import show
 from scipy.stats import weibull_min
 from array import array
-import pandas
-import random
 
 # getRVs:
 def getRVs():

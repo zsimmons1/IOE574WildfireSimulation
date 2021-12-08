@@ -1,15 +1,16 @@
 # Include libraries
 import pandas
 import os 
-import matplotlib.pyplot as plt
-import matplotlib.lines as lines
-from matplotlib.colors import *
-import numpy as np
-import rasterio
-from rasterio.plot import show
-from array import array
 import math
 import copy
+import csv
+import rasterio
+import matplotlib.pyplot as plt
+import matplotlib.lines as lines
+import numpy as np
+from rasterio.plot import show
+from array import array
+from matplotlib.colors import *
 from wildfireHelpers import *
 from runOneRep import *
 
@@ -20,6 +21,24 @@ class Policy:
         self.concentric = concentric # a boolean variable indicating if we will build a proactive concentric contingency line
         self.spokes = spokes # a boolean variable indicating if we will build spokes for the contingency lines
         self.name = name # a string with the letter name of the policy
+        # Open a csv file for each policy to store results
+        # with open(name + ".csv", "w") as f_out:
+        #     self.output = csv.writer(f_out, lineterminator = "\n")
+
+# Establish policies
+policyA = Policy("rectangle", False, False, "policyA")
+policyB = Policy("rectangle", True, False, "policyB")
+policyC = Policy("rectangle", True, True, "policyC")
+policyD = Policy("circle", False, False, "policyD")
+policyE = Policy("circle", True, False, "policyE")
+policyF = Policy("circle", True, True, "policyF")
+policies = [policyA, policyB, policyC, policyD, policyE, policyF]
+
+# Create a header line in each csv file
+for p in range(6):
+    with open(policies[p].name + ".csv", "w") as f_out:
+        writer = csv.writer(f_out, lineterminator = "\n")
+        writer.writerow(["AreaBurned", "BurnTime", "LinesBuilt"])
 
 # Initialize simulation tracking variables
 N = 1 # N is the number of replications to run
@@ -45,15 +64,6 @@ startj = 100 # 'startj' is the j index (corresponding to longitude) where the fi
 del_t = 0.5 # in hours, the time step between updates of the fire status
 breachProb = 0.05 # the probability that the fire jumps any given fire line
 
-# Establish policies
-policyA = Policy("rectangle", False, False, "policyA")
-policyB = Policy("rectangle", True, False, "policyB")
-policyC = Policy("rectangle", True, True, "policyC")
-policyD = Policy("circle", False, False, "policyD")
-policyE = Policy("circle", True, False, "policyE")
-policyF = Policy("circle", True, True, "policyF")
-policies = [policyA, policyB, policyC, policyD, policyE, policyF]
-
 # Establish sensitivity analysis variables
 responseTime = 3 # the number of hours before proctive lines are planned/built
 responseRadius = 4 # the number of cells away from the breach where the response lines are built
@@ -73,6 +83,4 @@ for n in range(N):
 # Finish
 # Visualize and output results for each policy
 # showResults(totBurnArea, burnTime, totLinesBuilt, cumulativeFire, map, N)
-
-
-
+print("Simulation complete")

@@ -13,19 +13,26 @@ import copy
 from wildfireHelpers import *
 from runOneRep import *
 
+# Create Policy class
+class Policy:
+    def __init__(self, fireLineShape, concentric, spokes, name):
+        self.fireLineShape = fireLineShape # a string variable indicating whether the fire lines will be rectangular or cirucular
+        self.concentric = concentric # a boolean variable indicating if we will build a proactive concentric contingency line
+        self.spokes = spokes # a boolean variable indicating if we will build spokes for the contingency lines
+        self.name = name # a string with the letter name of the policy
+
 # Initialize simulation tracking variables
-numPolicies = 2 # numPolicies is the total number of policies being compared
-N = 5 # N is the number of replications to run
+N = 1 # N is the number of replications to run
 # totBurnArea is the total area burned before fire containment
-totBurnArea = []*numPolicies
+totBurnArea = []
 # burnTime is the total burn time (in hours) of the fire before containment
-burnTime = []*numPolicies
+burnTime = []
 # linesBuilt is the number of cells of fire lines (of any type) built during the simulation run
-totLinesBuilt = []*numPolicies
+totLinesBuilt = []
 
 # Read data and initialize constant inputs
 # img holds the vegetation raster data from the LANDFIRE database
-img = rasterio.open('/Users/Zack/Desktop/IOE574/TermProject/IOE574WildfireSimulation/finalVegetationData.tif')
+img = rasterio.open('/Users/sprin/OneDrive/Desktop/IOE574/TermProject/IOE574WildfireSimulation/finalVegetationData.tif')
 # 'map' holds original vegetation raster data from TIFF file
 map = img.read()
 map = map[:, 200:400, 150:350]
@@ -38,66 +45,34 @@ startj = 100 # 'startj' is the j index (corresponding to longitude) where the fi
 del_t = 0.5 # in hours, the time step between updates of the fire status
 breachProb = 0.05 # the probability that the fire jumps any given fire line
 
-# Initialize wind speed and wind direction for all replications
-windSpeeds = []
-windDirs = []
-for n in range(N):
-    windSpeeds.append(initializeWindSpeed())
-    windDirs.append(initializeWindDir()) 
-print("windSpeeds and windDirs initialized")
+# Establish policies
+policyA = Policy("rectangle", False, False, "policyA")
+policyB = Policy("rectangle", True, False, "policyB")
+policyC = Policy("rectangle", True, True, "policyC")
+policyD = Policy("circle", False, False, "policyD")
+policyE = Policy("circle", True, False, "policyE")
+policyF = Policy("circle", True, True, "policyF")
+policies = [policyA, policyB, policyC, policyD, policyE, policyF]
 
-# Initialize enough breach probabilities for each replications
-breachProbs = []
-for i in range(10000):
-    breachProbs.append(np.random.uniform())
-print("breachProbs initialized")
-
-# Initialize enough cellTransitionProbs for each replication  
-cellTransitionProbs = []
-for i in range(9999999):
-    cellTransitionProbs.append(np.random.uniform())
-print("cellTransitionProbs initialized")
-
-# Initialize enough spreadRates for each vegetation type for each replication
-shape = [11.4, 13.6, 13.0, 0] 
-# trees
-treeRates = []
-for i in range(100000):
-    treeRates.append(np.random.weibull(11.4))
-# shrubs
-shrubRates = []
-for i in range(100000):
-    shrubRates.append(np.random.weibull(13.6)) 
-# herbs
-herbRates = []
-for i in range(100000):
-    herbRates.append(np.random.weibull(13.0))        
-allRates = [treeRates, shrubRates, herbRates]
-print("allRates initialized")
-
-# Initialize enough speedNoise and dirNoise for each replication
-speedNoise = []
-dirNoise = []
-for i in range(1000):
-    speedNoise.append(np.random.uniform(0.8, 1.2))
-    dirNoise.append(np.random.uniform(-11.25, 11.25))
+# Establish sensitivity analysis variables
+responseTime = 3 # the number of hours before proctive lines are planned/built
+responseRadius = 4 # the number of cells away from the breach where the response lines are built
+primaryBuffer = 4 # the number of cells away from the active fire border where the primary lines are built
+contingencyBuffer = primaryBuffer + 3
 
 # Run N replications of each policy type
 for n in range(N):
-    # Establish policies
-    responseTime = 9 # the number of hours before proctive lines are planned/built
-    fireLineShape = "rectangle" # a string variable indicating whether the fire lines will be rectangular or cirucular
-    responseRadius = 10 # the number of cells away from the breach where the response lines are built
-    primaryBuffer = 6 # the number of cells away from the active fire border where the primary lines are built
-    concentricContingency = True # a boolean variable indicating if we will build a proactive concentric contingency line
-    contingencyBuffer = primaryBuffer + 3
-    spokes = True # a boolean variable indicating if we will build spokes for the contingency lines
-    # run replication
-    totBurnArea, burnTime, linesBuilt, cumulativeFire = runOneRep(n, responseTime, fireLineShape, responseRadius, primaryBuffer, concentricContingency, contingencyBuffer, spokes, totBurnArea, burnTime, totLinesBuilt, map, cumulativeFire, starti, startj, del_t, breachProb, windSpeeds, windDirs, breachProbs, cellTransitionProbs, allRates, speedNoise, dirNoise)
+    # Generate all random numbers needed for replicaiton n
+    initWindSpeed, initWindDir, breachProbs, cellTransitionProbs, allRates, speedNoise, dirNoise = getRVs()
+
+    # Run one replication for each policy
+    # TODO: Store results for each policy is separate csv files
+    for p in range(6):
+        totBurnArea, burnTime, linesBuilt, cumulativeFire = runOneRep(n, responseTime, policies[p].fireLineShape, responseRadius, primaryBuffer, policies[p].concentric, contingencyBuffer, policies[p].spokes, totBurnArea, burnTime, totLinesBuilt, map, cumulativeFire, starti, startj, del_t, breachProb, initWindSpeed, initWindDir, breachProbs, cellTransitionProbs, allRates, speedNoise, dirNoise, policies[p].name)
     
 # Finish
 # Visualize and output results for each policy
-showResults(totBurnArea, burnTime, totLinesBuilt, cumulativeFire, map, N)
+# showResults(totBurnArea, burnTime, totLinesBuilt, cumulativeFire, map, N)
 
 
 

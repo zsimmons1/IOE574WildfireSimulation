@@ -11,7 +11,7 @@ import math
 import copy
 from wildfireHelpers import *
 
-def runOneRep(n, responseTime, fireLineShape, responseRadius, primaryBuffer, concentricContingency, contingencyBuffer, spokes, totBurnArea, burnTime, totLinesBuilt, map, cumulativeFire, starti, startj, del_t, breachProb, windSpeeds, windDirs, breachProbs, cellTransitionProbs, allRates, speedNoise, dirNoise):
+def runOneRep(n, responseTime, fireLineShape, responseRadius, primaryBuffer, concentricContingency, contingencyBuffer, spokes, totBurnArea, burnTime, totLinesBuilt, map, cumulativeFire, starti, startj, del_t, breachProb, initWindSpeed, initWindDir, breachProbs, cellTransitionProbs, allRates, speedNoise, dirNoise, name):
     # Initialize replication-specific variables
     t = 0 # time elapsed, in hours
     linesBuilt = 0 # the number of fire lines built (of all types)
@@ -40,8 +40,8 @@ def runOneRep(n, responseTime, fireLineShape, responseRadius, primaryBuffer, con
     fireBorder = [starti, starti, startj, startj] # [x_lower_bound, x_upper_bound, y_lower_bound, y_upper_bound]
 
     # Get wind speed and wind direction for this replication
-    wind_speed = windSpeeds[0]
-    wind_direction = windDirs[0]
+    wind_speed = initWindSpeed
+    wind_direction = initWindDir
 
     # Spread fire and build fire lines until there is zero fire spread OR fire spreads beyond map borders
     zeroSpread = False # Initially set 'zeroSpread' to False so we ititiate the while loop
@@ -100,7 +100,7 @@ def runOneRep(n, responseTime, fireLineShape, responseRadius, primaryBuffer, con
     burnTime.append(t) # Total burn time 
     totLinesBuilt.append((linesBuilt * 30)) # Total fire lines built (m)
     cumulativeFire = np.add(cumulativeFire, fire) # Add to cumulative burn
-    print("Replication " + str(n+1) + ": " + str(t) + " hours to burn " + str(np.sum(fire) * 900) +" square meters" + " or " + str(np.sum(fire) * 900 * 0.000247105) + " acres")
+    print("Replication " + str(n+1) + ", " + name + ": " + str(t) + " hours to burn " + str(np.sum(fire) * 900) +" square meters" + " or " + str(np.sum(fire) * 900 * 0.000247105) + " acres")
     showOneRep(fire, veg)
     return totBurnArea, burnTime, linesBuilt, cumulativeFire
     

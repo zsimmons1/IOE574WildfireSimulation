@@ -598,7 +598,7 @@ def showMaps(map, cumulativeFire):
     fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3)
     # Plot policy A
     ax1.imshow(vegRGB)
-    plot1 = ax1.imshow(cumulativeFire[0][50:150][50:150], cmap='autumn_r')
+    plot1 = ax1.imshow(cumulativeFire[0], cmap='autumn_r')
     ax1.axis("off")
     ax1.set_title('Policy A')
     # Plot policy B

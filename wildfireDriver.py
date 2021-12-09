@@ -23,12 +23,12 @@ class Policy:
         self.name = name # a string with the letter name of the policy
 
 # Establish policies
-policyA = Policy("rectangle", False, False, "policyA")
-policyB = Policy("rectangle", True, False, "policyB")
-policyC = Policy("rectangle", True, True, "policyC")
-policyD = Policy("circle", False, False, "policyD")
-policyE = Policy("circle", True, False, "policyE")
-policyF = Policy("circle", True, True, "policyF")
+policyA = Policy("rectangle", False, False, "policyA_0.15")
+policyB = Policy("rectangle", True, False, "policyB_0.15")
+policyC = Policy("rectangle", True, True, "policyC_0.15")
+policyD = Policy("circle", False, False, "policyD_0.15")
+policyE = Policy("circle", True, False, "policyE_0.15")
+policyF = Policy("circle", True, True, "policyF_0.15")
 policies = [policyA, policyB, policyC, policyD, policyE, policyF]
 
 # Create a header line in each csv file
@@ -38,7 +38,7 @@ for p in range(6):
         writer.writerow(["AreaBurned", "BurnTime", "LinesBuilt", "AvgWind", "numBreaches", "numResponses"])
 
 # Initialize simulation tracking variables
-N = 25 # N is the number of replications to run
+N = 100 # N is the number of replications to run
 # totBurnArea is the total area burned before fire containment
 totBurnArea = []
 # burnTime is the total burn time (in hours) of the fire before containment
@@ -60,7 +60,7 @@ cumulativeFire = np.zeros((6, np.size(map, 1), np.size(map, 2)), dtype=float)
 starti = 100 # 'starti' is the i index (corresponding to latitude) where the fire initiates (100 for final)
 startj = 100 # 'startj' is the j index (corresponding to longitude) where the fire initiates (100 for final)
 del_t = 0.5 # in hours, the time step between updates of the fire status
-breachProb = 0.05 # the probability that the fire jumps any given fire line
+breachProb = 0.15 # the probability that the fire jumps any given fire line
 
 # Establish sensitivity analysis variables
 responseTime = 5 # the number of hours before proctive lines are planned/built

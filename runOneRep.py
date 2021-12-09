@@ -63,9 +63,6 @@ def runOneRep(n, responseTime, fireLineShape, responseRadius, primaryBuffer, con
         # Draw all proactive fire lines as soon as t == responseTime
         if t == responseTime: 
             linesBuilt, numBreached = buildProactiveLines(i, j, contained, veg, concentricContingency, primaryBuffer, contingencyBuffer, breachProbs, linesBuilt, breachProb, tempFireBorder, fireLineShape, spokes, responseLineCounter, numBreached)
-            # If the policy calls for contingency lines, draw contigency lines
-            # if concentricContingency:
-            #     linesBuilt = buildProactiveLines(i, j, contained, veg, contingencyBuffer, linesBuilt, breachProbs, breachProb, tempFireBorder, fireLineShape, spokes)
 
         # Traverse the rectangular border around the fire edge plus one cell on each side
         for i in range(fireBorder[0] - 1, fireBorder[1] + 2): # i is latitutde index
@@ -108,7 +105,6 @@ def runOneRep(n, responseTime, fireLineShape, responseRadius, primaryBuffer, con
 
     cumulativeFire = np.add(cumulativeFire, fire) # Add to cumulative burn
     print("Replication " + str(n+1) + ", " + name + ": " + str(t) + " hours to burn " + str(np.sum(fire) * 900 * 0.000247105) + " acres")
-    # showOneRep(fire, veg)
 
     return totBurnArea, t, totLinesBuilt, avgWind, numBreached, responseLineCounter, cumulativeFire
     

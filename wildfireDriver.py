@@ -38,7 +38,7 @@ for p in range(6):
         writer.writerow(["AreaBurned", "BurnTime", "LinesBuilt", "AvgWind", "numBreaches", "numResponses"])
 
 # Initialize simulation tracking variables
-N = 5 # N is the number of replications to run
+N = 25 # N is the number of replications to run
 # totBurnArea is the total area burned before fire containment
 totBurnArea = []
 # burnTime is the total burn time (in hours) of the fire before containment
@@ -63,7 +63,7 @@ del_t = 0.5 # in hours, the time step between updates of the fire status
 breachProb = 0.05 # the probability that the fire jumps any given fire line
 
 # Establish sensitivity analysis variables
-responseTime = 4 # the number of hours before proctive lines are planned/built
+responseTime = 5 # the number of hours before proctive lines are planned/built
 responseRadius = 5 # the number of cells away from the breach where the response lines are built
 primaryBuffer = 5 # the number of cells away from the active fire border where the primary lines are built
 contingencyBuffer = primaryBuffer + 3

@@ -247,8 +247,13 @@ def spreadFire(distance, spread_prob):
         # the fire)
 def breachFireLine(breachProbs, linesBuilt, breachProb, responseLineCounter):
     # print("response line counter: ", responseLineCounter)
-    if responseLineCounter > 25:
+    if responseLineCounter > 20:
         return False
+    elif responseLineCounter > 10:
+        if breachProbs[linesBuilt] > (1-(breachProb/2)):
+            return True
+        else:
+            return False        
     if breachProbs[linesBuilt] > (1-breachProb):
         return True
     else:
@@ -267,7 +272,6 @@ def rectangleLine(veg, fireLineBounds, contained, breachProbs, linesBuilt, breac
     cL = fireLineBounds[2] # column lower bound (westmost)
     cU = fireLineBounds[3] # column upper bound (eastmost)
 
-    # newLinesBuilt = 0
     # Set the vegitation type to 4 for the fire lines
     for i in range(rL, rU+1): # Build vertical fire lines
         if contained[i][cL] == 0: # if the potential West fire line is not already contained
@@ -363,19 +367,9 @@ def addSpokes(veg, fireLineBounds, contained, breachProbs, linesBuilt, breachPro
     rC = int(rC)
     cC = int(cC)
 
-    # print("cC: ", cC)
-    # print("rC: ", rC)
-    # print("rL: ", rL)
-    # print("cL: ", cL)
-    # print("rU: ", rU)
-    # print("cU: ", cU)
-
     # Find slope for each
     slope1 = (rU - rC) / (cU - cC)
     slope2 = (rU - rC) / (cL - cC)
-
-    # print("slope1: ", slope1)
-    # print("slope2: ", slope2)
 
     # Find dif between rL and cL to define diagonal line #1
     b1 = rU - (slope1*cU)
@@ -384,12 +378,6 @@ def addSpokes(veg, fireLineBounds, contained, breachProbs, linesBuilt, breachPro
 
     # Find the max distance the spokes can be when circular
     maxDist = distCalculator(cL, rC, cC, rC)
-
-    # print("maxDist: ", maxDist)
-
-    # y = mx + b
-    # j is a column but an x in linear eq
-    # i is a row but a y in linear eq
 
     for i in range(rL, rU + 1):
         for j in range(cL, cU + 1):
@@ -610,27 +598,33 @@ def showMaps(map, cumulativeFire):
     fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3)
     # Plot policy A
     ax1.imshow(vegRGB)
-    plot1 = ax1.imshow(cumulativeFire[0], cmap='autumn_r')
+    plot1 = ax1.imshow(cumulativeFire[0][50:150][50:150], cmap='autumn_r')
+    ax1.axis("off")
     ax1.set_title('Policy A')
     # Plot policy B
     ax2.imshow(vegRGB)
-    plot1 = ax2.imshow(cumulativeFire[1], cmap='autumn_r')
+    plot1 = ax2.imshow(cumulativeFire[1][50:150][50:150], cmap='autumn_r')
+    ax2.axis("off")
     ax2.set_title('Policy A')
     # Plot policy C
     ax3.imshow(vegRGB)
-    plot3 = ax3.imshow(cumulativeFire[2], cmap='autumn_r')
+    plot3 = ax3.imshow(cumulativeFire[2][50:150][50:150], cmap='autumn_r')
+    ax3.axis("off")
     ax3.set_title('Policy C')
     # Plot policy D
     ax4.imshow(vegRGB)
-    plot4 = ax4.imshow(cumulativeFire[3], cmap='autumn_r')
+    plot4 = ax4.imshow(cumulativeFire[3][50:150][50:150], cmap='autumn_r')
+    ax4.axis("off")
     ax4.set_title('Policy D')
     # Plot policy E
     ax5.imshow(vegRGB)
-    plot5 = ax5.imshow(cumulativeFire[4], cmap='autumn_r')
+    plot5 = ax5.imshow(cumulativeFire[4][50:150][50:150], cmap='autumn_r')
+    ax5.axis("off")
     ax5.set_title('Policy E')
     # Plot policy F
     ax6.imshow(vegRGB)
-    plot6 = ax6.imshow(cumulativeFire[5], cmap='autumn_r')
+    plot6 = ax6.imshow(cumulativeFire[5][50:150][50:150], cmap='autumn_r')
+    ax6.axis("off")
     ax6.set_title('Policy E')
 
     # Create the color bar and save the plot
@@ -638,43 +632,7 @@ def showMaps(map, cumulativeFire):
     cbar_ax = fig.add_axes([0.85, 0.15, 0.025, 0.7])
     cbar = fig.colorbar(plot1, cax=cbar_ax)
     cbar.set_label('Number of replications burned')
-    plt.savefig('Cumulative Fire Maps.png')
-
-# # showResults: 
-# def showResults(totBurnArea, burnTime, totLinesBuilt, cumulativeFire, map, N):
-#     # Generate empirical CDFs
-#     fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
-#     x1 = np.sort(totBurnArea)
-#     y1 = np.linspace(1/N, 1, num=len(totBurnArea))
-#     ax1.scatter(x1, y1)
-#     ax1.set_title('Total Area Burned (squared meters * 10^-3)')
-#     x2 = np.sort(burnTime)
-#     y2 = np.linspace(1/N, 1, num=len(burnTime))
-#     ax2.scatter(x2, y2)
-#     ax2.set_title('Total Burn Time (hours)')
-#     x3 = np.sort(totLinesBuilt)
-#     y3 = np.linspace(1/N, 1, num=len(totLinesBuilt))
-#     ax3.scatter(x3, y3)
-#     ax3.set_title('Fire Lines Built (meters)')
-#     veg = np.floor_divide(map[0], np.ones([np.size(map, 1), np.size(map, 2)], dtype=int)*100)
-#     rgbIMG = np.zeros([np.size(veg, 0), np.size(veg, 1), 3], dtype=int)
-#     r = np.add(np.add(np.where(veg == 1, 56, 0), np.where(veg == 2, 147, 0)), np.where(veg == 3, 219, 0))
-#     g = np.add(np.add(np.where(veg == 1, 118, 0), np.where(veg == 2, 196, 0)), np.where(veg == 3, 235, 0))
-#     b = np.add(np.add(np.where(veg == 1, 29, 0), np.where(veg == 2, 125, 0)), np.where(veg == 3, 118, 0))
-#     vegRGB = np.dstack((r, g, b))
-#     ax4.imshow(vegRGB)
-#     alphaMat = np.ceil(cumulativeFire / N)
-#     cumulativeFire[cumulativeFire==0]=['nan']
-#     plot4 = ax4.imshow(cumulativeFire, cmap='autumn_r')
-#     cbar = plt.colorbar(plot4, ax = ax4, orientation='vertical')
-#     cbar.set_label('# of replications burned')
-#     ax4.set_title('Burn Map')
-#     plt.show()
-
-#     print("Burn Area -- Average: " + str(np.average(totBurnArea)) + " thousand square meters")
-#     print("Burn Time -- Average: " + str(np.average(burnTime)) + " hours")
-#     print("Fire Lines Built -- Average: " + str(np.average(totLinesBuilt)) + " meters")     
-
+    plt.savefig('Cumulative Fire Maps.png')  
 
 # showOneRep: Plots the map of the area pre-burn and post-burn (USED ONLY FOR VERIFICATION AND DEBUGGING)
     # 'fire' is a 2D matrix containing the percentage on fire of each cell on the map

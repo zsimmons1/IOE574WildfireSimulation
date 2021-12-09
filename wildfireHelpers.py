@@ -603,27 +603,27 @@ def showMaps(map, cumulativeFire):
     ax1.set_title('Policy A')
     # Plot policy B
     ax2.imshow(vegRGB)
-    plot1 = ax2.imshow(cumulativeFire[1][50:150][50:150], cmap='autumn_r')
+    plot1 = ax2.imshow(cumulativeFire[1], cmap='autumn_r')
     ax2.axis("off")
     ax2.set_title('Policy A')
     # Plot policy C
     ax3.imshow(vegRGB)
-    plot3 = ax3.imshow(cumulativeFire[2][50:150][50:150], cmap='autumn_r')
+    plot3 = ax3.imshow(cumulativeFire[2], cmap='autumn_r')
     ax3.axis("off")
     ax3.set_title('Policy C')
     # Plot policy D
     ax4.imshow(vegRGB)
-    plot4 = ax4.imshow(cumulativeFire[3][50:150][50:150], cmap='autumn_r')
+    plot4 = ax4.imshow(cumulativeFire[3], cmap='autumn_r')
     ax4.axis("off")
     ax4.set_title('Policy D')
     # Plot policy E
     ax5.imshow(vegRGB)
-    plot5 = ax5.imshow(cumulativeFire[4][50:150][50:150], cmap='autumn_r')
+    plot5 = ax5.imshow(cumulativeFire[4], cmap='autumn_r')
     ax5.axis("off")
     ax5.set_title('Policy E')
     # Plot policy F
     ax6.imshow(vegRGB)
-    plot6 = ax6.imshow(cumulativeFire[5][50:150][50:150], cmap='autumn_r')
+    plot6 = ax6.imshow(cumulativeFire[5], cmap='autumn_r')
     ax6.axis("off")
     ax6.set_title('Policy E')
 
